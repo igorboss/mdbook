@@ -83,12 +83,15 @@ export function ingestTermx(cfg) {
           pageCount[lang] = (pageCount[lang] || 0) + 1
         }
         const entry = { text: content.name?.trim() || content.slug, link: linkFor(content.slug, lang) }
-        if (children.length) entry.items = children
+        if (children.length) {
+          entry.items = children
+          entry.collapsed = true // collapsible + collapsed, like the TermX SSG menu
+        }
         items.push(entry)
       } else if (children.length) {
-        // Untranslated ancestor: keep as a group header (no link).
+        // Untranslated ancestor: keep as a collapsible group header (no link).
         const fallback = (node.contents || [])[0]
-        items.push({ text: fallback?.name?.trim() || 'Section', items: children })
+        items.push({ text: fallback?.name?.trim() || 'Section', collapsed: true, items: children })
       }
     }
     return items
