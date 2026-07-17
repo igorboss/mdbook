@@ -18,6 +18,19 @@ async function registerSdViewer() {
   if (!window.customElements.get('tx-sd-view')) initializeWebComponent('tx-sd-view')
 }
 
+// Mark the .links-list row whose link points at the current page as current.
+function markCurrentLink() {
+  if (typeof document === 'undefined') return
+  const here = location.pathname.replace(/index\.html$/, '').replace(/\.html$/, '').replace(/\/$/, '')
+  document.querySelectorAll('.vp-doc ul.links-list > li').forEach((li) => {
+    const a = li.querySelector(':scope > a')
+    const href = a?.getAttribute('href')
+    if (!href || /^(https?:)?\/\//.test(href)) return li.classList.remove('is-current')
+    const target = href.replace(/\.html$/, '').replace(/\/$/, '')
+    li.classList.toggle('is-current', target === here)
+  })
+}
+
 async function renderMermaid() {
   if (typeof document === 'undefined') return
   const nodes = document.querySelectorAll('.mermaid-diagram:not([data-rendered])')
@@ -45,6 +58,7 @@ export default {
     const run = () => {
       renderMermaid()
       registerSdViewer()
+      markCurrentLink()
     }
     onMounted(() => {
       run()
