@@ -38,6 +38,15 @@ function makeBundle(cfg, model) {
   // cs:/vs:/concept: link base — explicit site.web wins, else the tx-server's
   // own web UI (so links follow the configured server), else the space's web.
   const web = cfg.site.web || webFromTxServer(cfg.txServer) || model.web || null
+  // Slugs of pages that exist in this build (for resolving page: links locally).
+  const pageSlugs = [
+    ...new Set(
+      model.contentFiles
+        .filter((f) => f.dest.endsWith('.md'))
+        .map((f) => path.basename(f.dest, '.md'))
+        .filter((s) => s !== 'index')
+    )
+  ]
   return {
     title: cfg.site.title || model.title,
     description: cfg.site.description,
@@ -53,6 +62,8 @@ function makeBundle(cfg, model) {
     search: cfg.search,
     web,
     txServer: cfg.txServer,
+    spaceCode: model.spaceCode || null,
+    pageSlugs,
     logo: cfg.site.logo,
     outDir: cfg.build.out,
     cleanUrls: cfg.build.cleanUrls,

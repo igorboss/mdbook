@@ -61,9 +61,9 @@ Legend: ✅ full parity · 🟡 works with a caveat · 🔴 not supported static
 
 - **Multilingual routes.** TermX SSG uses `/en/…`, `/lt/…`. mdbook serves the **default
   language at the root** (`/…`) and other locales under `/<lang>/…` (VitePress i18n).
-- **Cross-space page links.** `page:space/slug` resolves to another space on the live wiki;
-  in a single-space static build it resolves to `/slug` (dead link if not present).
-  `ignoreDeadLinks` is on so the build never fails on these.
+- **Page links.** `page:slug` resolves to the internal page when it exists in this build;
+  otherwise (and for cross-space `page:space/slug`) it links to the page on the TermX web
+  wiki (`{web}/wiki/{space}/{slug}`) so the link still reaches a real page.
 - **Terminology resource links.** `cs:`/`vs:`/`concept:` etc. become **external links to the
   TermX web instance** (`space.json.web`), not in-app routes — by design for a static site.
 - **Home page.** The TermX SSG lands on the first page (e.g. `/en/about`); mdbook maps the

@@ -27,6 +27,7 @@ export function termxLinks(md, opts = {}) {
   const web = (opts.web || '').replace(/\/$/, '')
   const txServer = (opts.txServer || '').replace(/\/$/, '')
   const langPrefix = opts.langPrefix ? `/${opts.langPrefix}` : ''
+  const ctx = { web, txServer, langPrefix, spaceCode: opts.spaceCode, pageSlugs: new Set(opts.pageSlugs || []) }
   const defaultRender =
     md.renderer.rules.link_open || ((tokens, idx, o, env, self) => self.renderToken(tokens, idx, o))
 
@@ -35,7 +36,7 @@ export function termxLinks(md, opts = {}) {
     const hrefIdx = token.attrIndex('href')
     if (hrefIdx >= 0) {
       const raw = decodeURIComponent(token.attrs[hrefIdx][1])
-      const resolved = resolve(raw, web, txServer, langPrefix)
+      const resolved = resolve(raw, ctx)
       if (resolved != null) token.attrs[hrefIdx][1] = resolved
     }
     return defaultRender(tokens, idx, options, env, self)
@@ -45,15 +46,25 @@ export function termxLinks(md, opts = {}) {
 // FHIR resource type per link scheme (used when only txServer is configured).
 const FHIR_TYPE = { cs: 'CodeSystem', csv: 'CodeSystem', vs: 'ValueSet', vsv: 'ValueSet', ms: 'ConceptMap', msv: 'ConceptMap' }
 
-function resolve(href, web, txServer, langPrefix) {
+function resolve(href, ctx) {
+  const { web, txServer, langPrefix, spaceCode, pageSlugs } = ctx
   const m = href.match(/^([a-z]+):(.+)$/i)
   if (!m) return null
   const scheme = m[1].toLowerCase()
   const value = m[2]
 
   if (scheme === 'page') {
-    const slug = value.includes('/') ? value.split('/').pop() : value
-    return `${langPrefix}/${slug}`.replace(/\/+/g, '/')
+    // page:space/slug -> another space; page:slug -> this space.
+    if (value.includes('/')) {
+      const [space, ...rest] = value.split('/')
+      const slug = rest.join('/')
+      return web ? `${web}/wiki/${space}/${slug}` : `${langPrefix}/${slug}`.replace(/\/+/g, '/')
+    }
+    // Same-space: internal link when the page exists in this build; otherwise
+    // fall back to the page on the TermX web wiki.
+    if (pageSlugs.has(value)) return `${langPrefix}/${value}`.replace(/\/+/g, '/')
+    if (web && spaceCode) return `${web}/wiki/${spaceCode}/${value}`
+    return `${langPrefix}/${value}`.replace(/\/+/g, '/')
   }
 
   // Prefer the TermX web UI (nice pages); fall back to FHIR resource URLs on

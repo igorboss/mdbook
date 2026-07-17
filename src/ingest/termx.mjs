@@ -132,6 +132,7 @@ export function ingestTermx(cfg) {
   return {
     title: spaceNames[defaultLang] || cfg.site.title || path.basename(cfg.projectRoot),
     web: space.web || cfg.site.web || null,
+    spaceCode: space.code || null,
     langs: activeLangs,
     defaultLang,
     home: home[defaultLang] || null,
