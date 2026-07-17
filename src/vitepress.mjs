@@ -67,5 +67,8 @@ export function createMdbookConfig(bundle) {
       themeConfig: themeConfigFor(bundle, lang)
     }
   }
-  return { ...base, locales }
+  // Top-level themeConfig carries locale-independent settings (search index is
+  // built once, across all locales).
+  const themeConfig = bundle.search ? { search: { provider: 'local' } } : {}
+  return { ...base, themeConfig, locales }
 }

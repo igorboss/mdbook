@@ -64,59 +64,78 @@ export function ingestTermx(cfg) {
   const linkFor = (slug, lang) => (lang === defaultLang ? `/${slug}` : `/${lang}/${slug}`)
   const destFor = (slug, lang) => (lang === defaultLang ? `${slug}.md` : `${lang}/${slug}.md`)
 
-  // Build a per-language sidebar from the page tree; also queue content files.
+  // Build a per-language sidebar. STRICT: a page is included only if it is
+  // actually translated in that language. Ancestors without a translation but
+  // with translated descendants become link-less group headers so the tree
+  // stays navigable. Returns the number of real (linked) pages found.
+  const pageCount = {}
   function buildSidebar(nodes, lang) {
     const items = []
     for (const node of nodes || []) {
-      const content =
-        (node.contents || []).find((c) => c.lang === lang) || (node.contents || [])[0]
-      if (!content) continue
-      const src = findPageFile(cfg, content.slug)
-      const dest = destFor(content.slug, lang)
-      if (src && !seen.has(dest)) {
-        seen.add(dest)
-        contentFiles.push({ src, dest, lang })
-      }
-      const entry = { text: content.name?.trim() || content.slug, link: linkFor(content.slug, lang) }
+      const content = (node.contents || []).find((c) => c.lang === lang)
       const children = buildSidebar(node.children, lang)
-      if (children.length) entry.items = children
-      items.push(entry)
+      if (content) {
+        const src = findPageFile(cfg, content.slug)
+        const dest = destFor(content.slug, lang)
+        if (src && !seen.has(dest)) {
+          seen.add(dest)
+          contentFiles.push({ src, dest, lang })
+          pageCount[lang] = (pageCount[lang] || 0) + 1
+        }
+        const entry = { text: content.name?.trim() || content.slug, link: linkFor(content.slug, lang) }
+        if (children.length) entry.items = children
+        items.push(entry)
+      } else if (children.length) {
+        // Untranslated ancestor: keep as a group header (no link).
+        const fallback = (node.contents || [])[0]
+        items.push({ text: fallback?.name?.trim() || 'Section', items: children })
+      }
     }
     return items
   }
 
+  // First DFS page that has a translation in `lang` (used for the locale home).
+  function firstPage(nodes, lang) {
+    for (const node of nodes || []) {
+      const c = (node.contents || []).find((x) => x.lang === lang)
+      if (c) return c
+      const deep = firstPage(node.children, lang)
+      if (deep) return deep
+    }
+    return null
+  }
+
   const sidebars = {}
   const navs = {}
+  const home = {}
   for (const lang of langs) {
     sidebars[lang] = buildSidebar(tree, lang)
     navs[lang] = []
-  }
-
-  // Home = first root page of the default language.
-  let home = null
-  const firstRoot = tree[0]
-  if (firstRoot) {
-    const c =
-      (firstRoot.contents || []).find((x) => x.lang === defaultLang) || (firstRoot.contents || [])[0]
-    if (c) {
-      const src = findPageFile(cfg, c.slug)
+    // Each locale needs a landing page at its root.
+    const first = firstPage(tree, lang)
+    if (first) {
+      const src = findPageFile(cfg, first.slug)
       if (src) {
-        home = 'index.md'
-        contentFiles.push({ src, dest: 'index.md', lang: defaultLang })
+        const dest = lang === defaultLang ? 'index.md' : `${lang}/index.md`
+        contentFiles.push({ src, dest, lang })
+        home[lang] = dest
       }
     }
   }
 
+  // Keep only languages that actually have pages (default language always kept).
+  const activeLangs = langs.filter((l) => l === defaultLang || pageCount[l] > 0)
+
   return {
     title: spaceNames[defaultLang] || cfg.site.title || path.basename(cfg.projectRoot),
     web: space.web || cfg.site.web || null,
-    langs,
+    langs: activeLangs,
     defaultLang,
-    home,
+    home: home[defaultLang] || null,
     sidebars,
     navs,
     spaceNames,
-    contentFiles,
+    contentFiles: contentFiles.filter((f) => activeLangs.includes(f.lang)),
     assets: [] // TermX attachments (files/<id>/…) are rewritten by the markdown plugin
   }
 }

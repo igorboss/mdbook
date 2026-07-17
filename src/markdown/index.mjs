@@ -10,6 +10,7 @@ import footnote from 'markdown-it-footnote'
 import taskLists from 'markdown-it-task-lists'
 import { termxLinks } from './termx-links.mjs'
 import { termxImages } from './termx-images.mjs'
+import { termxEmbeds } from './termx-embeds.mjs'
 import { collapsible } from './collapsible.mjs'
 
 export function applyMarkdown(md, opts = {}) {
@@ -22,11 +23,21 @@ export function applyMarkdown(md, opts = {}) {
   md.use(taskLists, { label: false })
 
   // TermX-specific "smart text".
+  md.use(termxEmbeds) // {{def:…}} {{csc:…}} {{vsc:…}} -> Vue-safe inline code
   md.use(collapsible) // +++ Title … +++  ->  <details>
   md.use(termxLinks, opts) // [t](page:slug) [t](cs:code) [t](vs:code) [t](concept:cs|code)
   md.use(termxImages, opts) // ![](files/<pageId>/<file>)
 
   for (const p of opts.extraPlugins || []) md.use(p, opts)
+
+  // Make inline code Vue-safe: `{{ … }}` inside backticks must not be parsed as
+  // interpolation. VitePress marks fenced code v-pre but not inline code.
+  const escapeHtml = md.utils.escapeHtml
+  md.renderer.rules.code_inline = (tokens, idx) => {
+    const t = tokens[idx]
+    const cls = t.attrGet('class')
+    return `<code v-pre${cls ? ` class="${cls}"` : ''}>${escapeHtml(t.content)}</code>`
+  }
 }
 
 export { termxLinks, termxImages, collapsible }

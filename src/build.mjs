@@ -8,6 +8,8 @@ import { loadConfig } from './config.mjs'
 import { ingestGitbook } from './ingest/gitbook.mjs'
 import { ingestTermx } from './ingest/termx.mjs'
 import { copyDir } from './ingest/util.mjs'
+import { sanitizeTermxMarkdown } from './ingest/sanitize.mjs'
+import { fixStagedImages } from './ingest/images.mjs'
 
 const MDBOOK_SRC = path.dirname(fileURLToPath(import.meta.url)) // .../mdbook/src
 
@@ -61,11 +63,16 @@ function stageContent(cfg, model) {
     if (e.code !== 'EEXIST') throw e
   }
 
-  // Copy content files.
+  // Copy content files (sanitizing TermX markdown for the Vue compiler).
+  const sanitize = cfg.source.format === 'termx'
   for (const f of model.contentFiles) {
     const dest = path.join(staging, f.dest)
     fs.mkdirSync(path.dirname(dest), { recursive: true })
-    fs.copyFileSync(f.src, dest)
+    if (sanitize && f.src.endsWith('.md')) {
+      fs.writeFileSync(dest, sanitizeTermxMarkdown(fs.readFileSync(f.src, 'utf8')))
+    } else {
+      fs.copyFileSync(f.src, dest)
+    }
   }
 
   // Copy relative asset directories (e.g. .gitbook/assets) alongside the content
@@ -81,6 +88,9 @@ function stageContent(cfg, model) {
   if (fs.existsSync(attachments)) {
     copyDir(attachments, path.join(staging, 'public', 'attachments'))
   }
+
+  // Resolve/neutralize image references so a missing asset can't fail the build.
+  fixStagedImages(staging)
 
   return staging
 }
