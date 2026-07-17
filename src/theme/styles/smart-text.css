@@ -185,13 +185,12 @@
 .vp-doc .mdbook-pdf-frame {
   display: block;
   width: 100%;
-  height: 720px;
-  max-height: 85vh;
+  height: 720px; /* fixed px — vh collapses to 0 in 0-viewport embed contexts */
   border: 0;
   background: var(--vp-c-bg);
 }
 @media (max-width: 640px) {
-  .vp-doc .mdbook-pdf-frame { height: 60vh; }
+  .vp-doc .mdbook-pdf-frame { height: 480px; }
   .vp-doc .mdbook-file-bar { flex-wrap: wrap; }
   .vp-doc .mdbook-file-actions { margin-left: 0; }
 }
