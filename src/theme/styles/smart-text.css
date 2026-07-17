@@ -118,8 +118,40 @@
   outline-offset: 2px;
 }
 
-/* drawio inline SVGs. */
-.vp-doc img.drawio { max-width: 100%; }
+/* Diagrams: drawio (data-URI SVG), plantuml (server SVG), mermaid (client SVG). */
+.vp-doc .mdbook-drawio,
+.vp-doc .mdbook-plantuml,
+.vp-doc .mermaid-diagram {
+  margin: 1rem 0;
+  text-align: center;
+}
+.vp-doc img.drawio,
+.vp-doc img.plantuml { max-width: 100%; height: auto; }
+.vp-doc .mermaid-diagram svg { max-width: 100%; height: auto; }
+.vp-doc .mermaid-diagram .mermaid-fallback { display: none; } /* hidden until JS renders */
+.vp-doc .mermaid-diagram:not([data-rendered]) .mermaid-fallback {
+  display: block;
+  opacity: 0.6;
+}
+
+/* Include cards: standalone {{def:…}} {{csc:…}} {{vsc:…}}. */
+.vp-doc .mdbook-include {
+  border: 1px solid var(--vp-c-divider);
+  border-left: 3px solid var(--vp-c-brand-1);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 1rem 0;
+  background: var(--vp-c-bg-soft);
+}
+.vp-doc .mdbook-include-head { display: flex; align-items: center; gap: 0.5em; flex-wrap: wrap; }
+.vp-doc .mdbook-include-kind {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  color: var(--vp-c-brand-1);
+}
+.vp-doc .mdbook-include-params { margin-top: 4px; font-size: 0.85em; color: var(--vp-c-text-2); }
 
 /* GitBook card grids (<table data-view="cards"> -> .mdbook-cards). */
 .vp-doc .mdbook-cards {

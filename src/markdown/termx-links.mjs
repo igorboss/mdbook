@@ -56,6 +56,10 @@ function resolve(href, web, langPrefix) {
     if (cs === 'snomed-ct') return `${web}/integration/snomed/dashboard/${code}`
     return `${web}/resources/code-systems/${cs}/concepts/${code}/view`
   }
+  if (scheme === 'namespace') {
+    const [ns] = value.split('|')
+    return `${web}/resources/namespaces/${ns}`
+  }
   if (RESOURCE[scheme]) return `${web}/${RESOURCE[scheme](value)}`
   return null // http(s), mailto, etc. — leave untouched
 }

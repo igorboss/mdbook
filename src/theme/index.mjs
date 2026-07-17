@@ -1,10 +1,43 @@
 // mdbook default theme — extends VitePress's default theme and layers on
-// skin palettes and smart-text styles. The active skin's CSS is imported by the
-// generated staging theme file (see src/build.mjs), so this stays skin-agnostic.
+// skin palettes, smart-text styles, and client-side Mermaid rendering. The
+// active skin's CSS is imported by the generated staging theme file.
 import DefaultTheme from 'vitepress/theme'
+import { useRoute } from 'vitepress'
+import { onMounted, watch, nextTick } from 'vue'
 import './styles/base.css'
 import './styles/smart-text.css'
 
+// Render every `.mermaid-diagram` placeholder produced by the markdown layer.
+async function renderMermaid() {
+  if (typeof document === 'undefined') return
+  const nodes = document.querySelectorAll('.mermaid-diagram:not([data-rendered])')
+  if (!nodes.length) return
+  const mermaid = (await import('mermaid')).default
+  const dark = document.documentElement.classList.contains('dark')
+  mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'default' })
+  let i = 0
+  for (const el of nodes) {
+    el.setAttribute('data-rendered', '1')
+    const src = decodeURIComponent(el.getAttribute('data-src') || '')
+    try {
+      const { svg } = await mermaid.render(`mdbook-mermaid-${Date.now()}-${i++}`, src)
+      el.innerHTML = svg
+    } catch (e) {
+      el.innerHTML = `<pre class="mermaid-error">Mermaid error: ${e?.message || e}</pre>`
+    }
+  }
+}
+
 export default {
-  extends: DefaultTheme
+  extends: DefaultTheme,
+  setup() {
+    const route = useRoute()
+    onMounted(() => {
+      renderMermaid()
+      watch(
+        () => route.path,
+        () => nextTick(renderMermaid)
+      )
+    })
+  }
 }
