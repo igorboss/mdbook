@@ -53,20 +53,23 @@
 .vp-doc ul.dense li,
 .vp-doc ol.dense li { margin: 0; }
 
-/* Grid lists: {.grid-list} — soft-filled stacked rows, like the TermX SSG. */
+/* Grid lists: {.grid-list} — zebra-striped stacked rows. */
 .vp-doc ul.grid-list {
   list-style: none;
   padding-left: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  overflow: hidden;
 }
 .vp-doc ul.grid-list > li {
-  background: var(--vp-c-bg-soft);
-  border-radius: 4px;
   padding: 8px 16px;
   margin: 0;
 }
+.vp-doc ul.grid-list > li:nth-child(odd) { background: var(--vp-c-bg-soft); }
+.vp-doc ul.grid-list > li:nth-child(even) { background: var(--vp-c-bg); }
 
 /* Collapsible +++ blocks. */
 .vp-doc details.mdbook-collapsible {
