@@ -20,8 +20,8 @@ function exists(p) {
 function resolveOne(alt, src, fileDir, staging) {
   if (EXTERNAL.test(src) || src.startsWith('data:')) return null // keep as-is
 
-  // TermX attachment convention -> public/attachments/<id>/<file>.
-  const filesM = src.match(/^files\/(\d+)\/(.+)$/)
+  // TermX attachment convention -> public/attachments/<folder>/<file>.
+  const filesM = src.match(/^files\/([\w.-]+)\/(.+)$/)
   if (filesM) {
     const pub = path.join(staging, 'public', 'attachments', filesM[1], filesM[2])
     return exists(pub) ? `![${alt}](/attachments/${filesM[1]}/${filesM[2]})` : `*${alt || 'image'}*`
