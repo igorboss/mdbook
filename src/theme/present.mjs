@@ -14,10 +14,12 @@ function flatten(items, out = []) {
 }
 const norm = (p) => (p || '').replace(/\.html$/, '').replace(/\/$/, '') || '/'
 
-const ICON_ENTER =
-  "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3'/></svg>"
-const ICON_EXIT =
-  "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3'/></svg>"
+const SVG = (body) =>
+  `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${body}</svg>`
+const ICON_ENTER = SVG("<path d='M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3'/>")
+const ICON_EXIT = SVG("<path d='M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3'/>")
+const ICON_PREV = SVG("<path d='m15 18-6-6 6-6'/>")
+const ICON_NEXT = SVG("<path d='m9 18 6-6-6-6'/>")
 
 export default defineComponent({
   name: 'MdbookPresent',
@@ -84,17 +86,19 @@ export default defineComponent({
 
     return () => {
       const els = []
-      if (presenting.value && prev.value) {
-        els.push(h('button', { class: 'mp-edge mp-prev', title: `Previous: ${prev.value.text}`, onClick: () => go(prev.value) }, '‹'))
-      }
-      if (presenting.value && next.value) {
-        els.push(h('button', { class: 'mp-edge mp-next', title: `Next: ${next.value.text}`, onClick: () => go(next.value) }, '›'))
+      if (presenting.value) {
+        els.push(
+          h('button', { class: 'mp-btn mp-prev', title: prev.value ? `Previous: ${prev.value.text}` : 'No previous page', disabled: !prev.value, onClick: () => go(prev.value) }, [ico(ICON_PREV)])
+        )
+        els.push(
+          h('button', { class: 'mp-btn mp-next', title: next.value ? `Next: ${next.value.text}` : 'No next page', disabled: !next.value, onClick: () => go(next.value) }, [ico(ICON_NEXT)])
+        )
       }
       els.push(
         h(
           'button',
           {
-            class: ['mp-toggle', { 'is-on': presenting.value }],
+            class: ['mp-btn', 'mp-toggle', { 'is-on': presenting.value }],
             title: presenting.value ? 'Exit presentation (Esc)' : 'Presentation mode',
             'aria-label': 'Toggle presentation mode',
             onClick: toggle

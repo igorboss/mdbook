@@ -78,11 +78,18 @@
   margin: 0 !important;
 }
 
-.mp-toggle {
+/* A single control cluster pinned bottom-right: [‹] [›] [⤢] (prev, next,
+   enter/exit) as matching rounded icon buttons. */
+.mdbook-present-ui {
   position: fixed;
   z-index: 100;
   right: 16px;
   bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mp-btn {
   width: 40px;
   height: 40px;
   display: inline-flex;
@@ -94,12 +101,24 @@
   border: 1px solid var(--vp-c-divider);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  opacity: 0.85;
+  transition: opacity 0.2s, color 0.2s, border-color 0.2s;
 }
-.mp-toggle:hover,
+.mp-toggle {
+  opacity: 0.7;
+}
+.mp-btn:hover,
 .mp-toggle.is-on {
   opacity: 1;
+}
+.mp-btn:hover:not(.mp-toggle) {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+}
+.mp-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  box-shadow: none;
 }
 .mp-ico {
   display: inline-flex;
@@ -107,38 +126,6 @@
 .mp-ico svg {
   width: 18px;
   height: 18px;
-}
-.mp-edge {
-  position: fixed;
-  z-index: 100;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 48px;
-  height: 84px;
-  font-size: 36px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
-  opacity: 0.9;
-  transition: opacity 0.2s, color 0.2s, border-color 0.2s;
-}
-.mp-edge:hover {
-  opacity: 1;
-  color: var(--vp-c-brand-1);
-  border-color: var(--vp-c-brand-1);
-}
-.mp-prev {
-  left: 16px;
-}
-.mp-next {
-  right: 16px;
 }
 
 /* Use a universally recognizable globe for the language switcher, instead of
