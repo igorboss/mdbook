@@ -97,6 +97,7 @@ site:
   url: https://example.org/    # optional canonical URL (auto-detected in CI);
                                #   enables sitemap.xml, canonical + Open Graph URLs
   logo: /.gitbook/assets/logo.png
+  image: /.gitbook/assets/social.png  # optional Open Graph / social image (falls back to logo)
   web: https://example.org     # optional: base for cs:/vs:/page: web links
 
 source:

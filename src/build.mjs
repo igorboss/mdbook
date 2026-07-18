@@ -54,6 +54,7 @@ function makeBundle(cfg, model) {
     description: cfg.site.description,
     base: cfg.site.base,
     siteUrl: cfg.site.url || null,
+    image: cfg.site.image || cfg.site.logo || null, // social/OG image
     defaultLang: model.defaultLang,
     langs: model.langs,
     spaceNames: model.spaceNames,
@@ -141,6 +142,14 @@ function stageContent(cfg, model) {
       fs.copyFileSync(src, path.join(staging, 'public', 'CNAME'))
       break
     }
+  }
+
+  // robots.txt pointing crawlers at the sitemap (only when the site URL is known
+  // and the project doesn't ship its own robots.txt).
+  const robotsDest = path.join(staging, 'public', 'robots.txt')
+  if (cfg.site.url && !fs.existsSync(robotsDest)) {
+    fs.mkdirSync(path.dirname(robotsDest), { recursive: true })
+    fs.writeFileSync(robotsDest, `User-agent: *\nAllow: /\n\nSitemap: ${cfg.site.url}sitemap.xml\n`)
   }
 
   return staging

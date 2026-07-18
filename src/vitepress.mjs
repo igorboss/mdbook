@@ -29,32 +29,60 @@ function routeFor(relativePath, cleanUrls) {
     .replace(/\.md$/, cleanUrls ? '' : '.html')
 }
 
-// Per-page Open Graph / Twitter / canonical tags. Runs as a VitePress build
-// hook so each page carries its own title, description and (when the canonical
-// site URL is known) absolute URL.
+// Resolve an image path/URL to an absolute URL (needs the site URL for
+// site-relative paths). Returns null if it can't be made absolute.
+function absImage(image, siteUrl) {
+  if (!image) return null
+  if (/^https?:\/\//i.test(image)) return image
+  return siteUrl ? new URL(String(image).replace(/^\//, ''), siteUrl).toString() : null
+}
+
+// Per-page Open Graph / Twitter / canonical / JSON-LD tags. Runs as a VitePress
+// build hook so each page carries its own title, description, image and (when the
+// canonical site URL is known) absolute URL.
 function seoHead(bundle) {
-  const { siteUrl, title: siteName, description: siteDesc, cleanUrls } = bundle
+  const { siteUrl, title: siteName, description: siteDesc, cleanUrls, defaultLang } = bundle
+  const imageUrl = absImage(bundle.image, siteUrl)
   return (ctx) => {
     const pd = ctx.pageData || {}
     const title = pd.title || ctx.title || siteName
     const description = pd.description || ctx.description || siteDesc || ''
     const isHome = (pd.relativePath || '').replace(/(^|\/)index\.md$/, '$1') === ''
+    const url = siteUrl ? new URL(routeFor(pd.relativePath, cleanUrls ?? true), siteUrl).toString() : null
     const tags = [
       ['meta', { property: 'og:type', content: isHome ? 'website' : 'article' }],
       ['meta', { property: 'og:title', content: title }],
       ['meta', { property: 'og:site_name', content: siteName }],
-      ['meta', { name: 'twitter:card', content: 'summary' }],
+      ['meta', { name: 'twitter:card', content: imageUrl ? 'summary_large_image' : 'summary' }],
       ['meta', { name: 'twitter:title', content: title }]
     ]
     if (description) {
       tags.push(['meta', { property: 'og:description', content: description }])
       tags.push(['meta', { name: 'twitter:description', content: description }])
     }
-    if (siteUrl) {
-      const url = new URL(routeFor(pd.relativePath, cleanUrls ?? true), siteUrl).toString()
+    if (imageUrl) {
+      tags.push(['meta', { property: 'og:image', content: imageUrl }])
+      tags.push(['meta', { name: 'twitter:image', content: imageUrl }])
+    }
+    if (url) {
       tags.push(['meta', { property: 'og:url', content: url }])
       tags.push(['link', { rel: 'canonical', href: url }])
     }
+    // JSON-LD structured data (WebSite on the home page, TechArticle elsewhere).
+    const lang = pd.frontmatter?.lang || defaultLang || 'en'
+    const ld = isHome
+      ? { '@context': 'https://schema.org', '@type': 'WebSite', name: siteName, inLanguage: lang, ...(siteUrl ? { url: siteUrl } : {}), ...(siteDesc ? { description: siteDesc } : {}) }
+      : {
+          '@context': 'https://schema.org',
+          '@type': 'TechArticle',
+          headline: title,
+          inLanguage: lang,
+          ...(description ? { description } : {}),
+          ...(url ? { url } : {}),
+          ...(imageUrl ? { image: imageUrl } : {}),
+          isPartOf: { '@type': 'WebSite', name: siteName, ...(siteUrl ? { url: siteUrl } : {}) }
+        }
+    tags.push(['script', { type: 'application/ld+json' }, JSON.stringify(ld)])
     return tags
   }
 }
