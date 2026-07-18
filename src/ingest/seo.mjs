@@ -54,15 +54,19 @@ export function deriveDescription(markdown, max = 160) {
   return text
 }
 
-// Merge title/description into the file's YAML frontmatter, preserving any keys
-// the page already defines. Values are JSON-encoded (a valid YAML flow scalar).
-export function applySeoFrontmatter(text, { title, description }) {
+// Merge title/description (and any `extra` keys) into the file's YAML
+// frontmatter, preserving keys the page already defines. Values are JSON-encoded
+// (a valid YAML flow scalar).
+export function applySeoFrontmatter(text, { title, description, extra } = {}) {
   const m = text.match(FM_RE)
   const existing = m ? m[1] : ''
   const additions = []
   if (title && !hasKey(existing, 'title')) additions.push(`title: ${JSON.stringify(title)}`)
   if (description && !hasKey(existing, 'description')) {
     additions.push(`description: ${JSON.stringify(description)}`)
+  }
+  for (const [k, v] of Object.entries(extra || {})) {
+    if (v != null && !hasKey(existing, k)) additions.push(`${k}: ${JSON.stringify(v)}`)
   }
   if (!additions.length) return text
   if (m) return text.replace(FM_RE, `---\n${existing}\n${additions.join('\n')}\n---\n`)

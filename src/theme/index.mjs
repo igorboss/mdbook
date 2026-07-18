@@ -3,7 +3,8 @@
 // active skin's CSS is imported by the generated staging theme file.
 import DefaultTheme from 'vitepress/theme'
 import { useRoute } from 'vitepress'
-import { onMounted, watch, nextTick } from 'vue'
+import { h, onMounted, watch, nextTick } from 'vue'
+import Comments from './comments.mjs'
 import './styles/base.css'
 import './styles/smart-text.css'
 
@@ -53,6 +54,8 @@ async function renderMermaid() {
 
 export default {
   extends: DefaultTheme,
+  // Mount the (optional) comments widget after the article body.
+  Layout: () => h(DefaultTheme.Layout, null, { 'doc-after': () => h(Comments) }),
   setup() {
     const route = useRoute()
     const run = () => {

@@ -18,6 +18,7 @@ function themeConfigFor(bundle, lang) {
     sidebar: resolveSidebar(bundle.sidebars?.[lang], bundle.userSidebar, bundle.userSidebarExtra),
     ...(bundle.search ? { search: { provider: 'local' } } : {}),
     ...(bundle.logo ? { logo: bundle.logo } : {}),
+    ...(bundle.comments ? { comments: bundle.comments } : {}),
     outline: bundle.outline || [2, 3]
   }
 }
@@ -68,6 +69,9 @@ function seoHead(bundle) {
       tags.push(['meta', { property: 'og:url', content: url }])
       tags.push(['link', { rel: 'canonical', href: url }])
     }
+    // Stable TermX identifiers (space + page code) for downstream tooling.
+    if (bundle.spaceCode) tags.push(['meta', { name: 'termx:space', content: bundle.spaceCode }])
+    if (pd.frontmatter?.termxPage) tags.push(['meta', { name: 'termx:page', content: pd.frontmatter.termxPage }])
     // JSON-LD structured data (WebSite on the home page, TechArticle elsewhere).
     const lang = pd.frontmatter?.lang || defaultLang || 'en'
     const ld = isHome

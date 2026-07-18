@@ -108,6 +108,15 @@ theme:
 
 search: true
 
+# Comments (optional) — Giscus / GitHub Discussions, mounted after each page.
+comments:
+  provider: giscus
+  repo: owner/repo
+  repoId: R_xxx
+  category: Announcements
+  categoryId: DIC_xxx
+  mapping: termx           # thread by the stable TermX page code (else: pathname, title, …)
+
 # TermX terminology (optional) — FHIR server for {{csc:}}/{{vsc:}} and cs:/vs: links.
 tx-server: https://your-termx-host/api/fhir
 

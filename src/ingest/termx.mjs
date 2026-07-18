@@ -79,7 +79,7 @@ export function ingestTermx(cfg) {
         const dest = destFor(content.slug, lang)
         if (src && !seen.has(dest)) {
           seen.add(dest)
-          contentFiles.push({ src, dest, lang, title: content.name?.trim() || content.slug })
+          contentFiles.push({ src, dest, lang, title: content.name?.trim() || content.slug, code: node.code })
           pageCount[lang] = (pageCount[lang] || 0) + 1
         }
         const entry = { text: content.name?.trim() || content.slug, link: linkFor(content.slug, lang) }
@@ -97,12 +97,11 @@ export function ingestTermx(cfg) {
     return items
   }
 
-  // First DFS page that has a translation in `lang` (used for the locale home).
-  function firstPage(nodes, lang) {
+  // First DFS page node that has a translation in `lang` (locale home source).
+  function firstPageNode(nodes, lang) {
     for (const node of nodes || []) {
-      const c = (node.contents || []).find((x) => x.lang === lang)
-      if (c) return c
-      const deep = firstPage(node.children, lang)
+      if ((node.contents || []).some((x) => x.lang === lang)) return node
+      const deep = firstPageNode(node.children, lang)
       if (deep) return deep
     }
     return null
@@ -115,12 +114,13 @@ export function ingestTermx(cfg) {
     sidebars[lang] = buildSidebar(tree, lang)
     navs[lang] = []
     // Each locale needs a landing page at its root.
-    const first = firstPage(tree, lang)
+    const node = firstPageNode(tree, lang)
+    const first = node && (node.contents || []).find((x) => x.lang === lang)
     if (first) {
       const src = findPageFile(cfg, first.slug)
       if (src) {
         const dest = lang === defaultLang ? 'index.md' : `${lang}/index.md`
-        contentFiles.push({ src, dest, lang, title: first.name?.trim() || first.slug })
+        contentFiles.push({ src, dest, lang, title: first.name?.trim() || first.slug, code: node.code })
         home[lang] = dest
       }
     }

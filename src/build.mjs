@@ -64,6 +64,7 @@ function makeBundle(cfg, model) {
     userSidebar: cfg.sidebar,
     userSidebarExtra: cfg.sidebarExtra,
     search: cfg.search,
+    comments: cfg.comments || null,
     web,
     txServer: cfg.txServer,
     spaceCode: model.spaceCode || null,
@@ -110,7 +111,12 @@ function stageContent(cfg, model) {
       text = transformGitbookCards(text) // GitBook card tables -> card grid
       text = transformFileEmbeds(text, cfg.site.base) // {% file %} -> PDF/download card
       // Per-page <title>/<meta description>: page name + first-paragraph summary.
-      text = applySeoFrontmatter(text, { title: f.title, description: deriveDescription(text) })
+      // `termxPage` carries the stable TermX page code (for comment threading etc.).
+      text = applySeoFrontmatter(text, {
+        title: f.title,
+        description: deriveDescription(text),
+        extra: f.code ? { termxPage: f.code } : null
+      })
       fs.writeFileSync(dest, text)
     } else {
       fs.copyFileSync(f.src, dest)

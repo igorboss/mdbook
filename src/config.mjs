@@ -67,6 +67,7 @@ export function loadConfig(projectRoot, overrides = {}) {
     sidebar: data.sidebar || null, // if set, fully overrides the generated sidebar
     sidebarExtra: data.sidebarExtra || [], // appended to the generated sidebar
     search: data.search ?? true,
+    comments: data.comments || null, // e.g. { provider: giscus, repo, repoId, category, categoryId }
     locales: data.locales || null, // resolved from content when null
     build: {
       out: path.resolve(projectRoot, overrides.out || data.build?.out || '.mdbook/dist'),
