@@ -66,6 +66,7 @@ function makeBundle(cfg, model) {
     spaceCode: model.spaceCode || null,
     pageSlugs,
     logo: cfg.site.logo,
+    mdbookDir: path.resolve(MDBOOK_SRC, '..'),
     outDir: cfg.build.out,
     cleanUrls: cfg.build.cleanUrls,
     assetBase: '/attachments',

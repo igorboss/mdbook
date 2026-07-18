@@ -52,7 +52,12 @@ export function createMdbookConfig(bundle) {
     lastUpdated: true,
     markdown,
     // <tx-sd-view> is the vendored StructureDefinition viewer web component.
-    vue: { template: { compilerOptions: { isCustomElement: (tag) => tag === 'tx-sd-view' } } }
+    vue: { template: { compilerOptions: { isCustomElement: (tag) => tag === 'tx-sd-view' } } },
+    // Don't watch mdbook's own source as config deps — editing the tool while a
+    // project dev server runs would otherwise restart it (Shiki-dispose race).
+    ...(bundle.mdbookDir
+      ? { vite: { server: { watch: { ignored: [`${bundle.mdbookDir}/**`] } } } }
+      : {})
   }
 
   // Single language: flat config. Multiple: VitePress `locales`.
