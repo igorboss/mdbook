@@ -89,12 +89,12 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--vp-c-bg-soft);
+  background: var(--vp-c-bg);
   color: var(--vp-c-text-1);
   border: 1px solid var(--vp-c-divider);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
   cursor: pointer;
-  opacity: 0.55;
+  opacity: 0.7;
   transition: opacity 0.2s;
 }
 .mp-toggle:hover,
@@ -113,30 +113,32 @@
   z-index: 100;
   top: 50%;
   transform: translateY(-50%);
-  width: 44px;
-  height: 76px;
-  font-size: 34px;
+  width: 48px;
+  height: 84px;
+  font-size: 36px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-2);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
   border: 1px solid var(--vp-c-divider);
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  opacity: 0.35;
-  transition: opacity 0.2s, color 0.2s;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  opacity: 0.9;
+  transition: opacity 0.2s, color 0.2s, border-color 0.2s;
 }
 .mp-edge:hover {
   opacity: 1;
   color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
 }
 .mp-prev {
-  left: 12px;
+  left: 16px;
 }
 .mp-next {
-  right: 12px;
+  right: 16px;
 }
 
 /* Use a universally recognizable globe for the language switcher, instead of
