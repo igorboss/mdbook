@@ -42,6 +42,13 @@
   .VPNavBarSearch { padding-left: 64px; }
 }
 
+/* On wide screens VitePress centers the article column (margin: 0 auto),
+   drifting it right of the nav search. Pin the article to the left so it stays
+   aligned with the search; the on-this-page aside keeps its place on the right. */
+@media (min-width: 1280px) {
+  .VPDoc .content-container { margin-left: 0; margin-right: auto; }
+}
+
 /* Use a universally recognizable globe for the language switcher, instead of
    the default translate glyph. */
 .VPNavBarTranslations .vpi-languages {
