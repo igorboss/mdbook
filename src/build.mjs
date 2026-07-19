@@ -75,6 +75,7 @@ function makeBundle(cfg, model) {
     userNav: cfg.nav,
     userSidebar: cfg.sidebar,
     userSidebarExtra: cfg.sidebarExtra,
+    userLocales: cfg.locales, // per-locale menu overrides: { <lang>: { label, nav, sidebar, sidebarExtra } }
     search: cfg.search,
     comments: cfg.comments || null,
     footer: cfg.footer || null,

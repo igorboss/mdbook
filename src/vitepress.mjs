@@ -12,10 +12,42 @@ function resolveNav(generated, userNav) {
   return [...(generated || []), ...(userNav || [])]
 }
 
+// Prefix an internal link with the locale (/build -> /lt/build, / -> /lt/), so a
+// shared menu points at the current locale instead of the default one. External
+// links, anchors and already-prefixed links are left untouched.
+function localizeLink(link, lang) {
+  if (typeof link !== 'string' || !link.startsWith('/')) return link
+  if (link === `/${lang}` || link.startsWith(`/${lang}/`)) return link
+  return link === '/' ? `/${lang}/` : `/${lang}${link}`
+}
+
+function localizeMenu(items, lang) {
+  if (!Array.isArray(items)) return items
+  return items.map((item) => {
+    const out = { ...item }
+    if (out.link) out.link = localizeLink(out.link, lang)
+    if (Array.isArray(out.items)) out.items = localizeMenu(out.items, lang)
+    return out
+  })
+}
+
 function themeConfigFor(bundle, lang) {
+  const isDefault = lang === bundle.defaultLang
+  const loc = (bundle.userLocales && bundle.userLocales[lang]) || {}
+  // Per-locale menu: an explicit override wins; otherwise the shared config is
+  // reused, with its internal links localized to this locale (so a shared nav on
+  // /<lang>/ pages links within that locale, not back to the default language).
+  const userNav = loc.nav != null ? loc.nav : isDefault ? bundle.userNav : localizeMenu(bundle.userNav, lang)
+  const userSidebar = loc.sidebar != null ? loc.sidebar : bundle.userSidebar
+  const userSidebarExtra =
+    loc.sidebarExtra != null
+      ? loc.sidebarExtra
+      : isDefault
+        ? bundle.userSidebarExtra
+        : localizeMenu(bundle.userSidebarExtra, lang)
   return {
-    nav: resolveNav(bundle.navs?.[lang], bundle.userNav),
-    sidebar: resolveSidebar(bundle.sidebars?.[lang], bundle.userSidebar, bundle.userSidebarExtra),
+    nav: resolveNav(bundle.navs?.[lang], userNav),
+    sidebar: resolveSidebar(bundle.sidebars?.[lang], userSidebar, userSidebarExtra),
     ...(bundle.search ? { search: { provider: 'local' } } : {}),
     ...(bundle.logo ? { logo: bundle.logo } : {}),
     ...(bundle.comments ? { comments: bundle.comments } : {}),
@@ -149,8 +181,9 @@ export function createMdbookConfig(bundle) {
   const locales = {}
   for (const lang of langs) {
     const isDefault = lang === defaultLang
+    const label = bundle.userLocales?.[lang]?.label || spaceNames[lang] || lang.toUpperCase()
     locales[isDefault ? 'root' : lang] = {
-      label: spaceNames[lang] || lang.toUpperCase(),
+      label,
       lang,
       ...(isDefault ? {} : { link: `/${lang}/` }),
       themeConfig: themeConfigFor(bundle, lang)

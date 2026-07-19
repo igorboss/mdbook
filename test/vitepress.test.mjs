@@ -68,3 +68,40 @@ test('seoHead: frontmatter keywords -> <meta name="keywords">', () => {
   const none = cfg.transformHead({ pageData: { relativePath: 'bar.md', title: 'Bar' } })
   assert.equal(none.find((t) => t[1].name === 'keywords'), undefined)
 })
+
+test('multilingual nav: shared nav links are localized per locale; default untouched', () => {
+  const cfg = createMdbookConfig({
+    title: 'Site', langs: ['en', 'lt'], defaultLang: 'en',
+    spaceNames: { en: 'English', lt: 'Lietuvių' },
+    userNav: [
+      { text: 'Home', link: '/' },
+      { text: 'Builds', link: '/build' },
+      { text: 'External', link: 'https://x.io' },
+      { text: 'More', items: [{ text: 'Terms', link: '/terminology' }] }
+    ]
+  })
+  const en = cfg.locales.root.themeConfig.nav
+  const lt = cfg.locales.lt.themeConfig.nav
+  // Default locale: links unchanged.
+  assert.deepEqual(en.map((n) => n.link), ['/', '/build', 'https://x.io', undefined])
+  // Non-default locale: internal links prefixed, external untouched, nested localized.
+  assert.equal(lt[0].link, '/lt/')
+  assert.equal(lt[1].link, '/lt/build')
+  assert.equal(lt[2].link, 'https://x.io')
+  assert.equal(lt[3].items[0].link, '/lt/terminology')
+})
+
+test('multilingual nav: per-locale override wins and sets the switcher label', () => {
+  const cfg = createMdbookConfig({
+    title: 'Site', langs: ['en', 'lt'], defaultLang: 'en',
+    spaceNames: { en: 'English', lt: 'Lietuvių' },
+    userNav: [{ text: 'Home', link: '/' }],
+    userLocales: {
+      lt: { label: 'LT', nav: [{ text: 'Pradžia', link: '/lt/' }, { text: 'Versijos', link: '/lt/build' }] }
+    }
+  })
+  const lt = cfg.locales.lt.themeConfig.nav
+  assert.deepEqual(lt.map((n) => n.text), ['Pradžia', 'Versijos'])
+  assert.deepEqual(lt.map((n) => n.link), ['/lt/', '/lt/build'])
+  assert.equal(cfg.locales.lt.label, 'LT')
+})
