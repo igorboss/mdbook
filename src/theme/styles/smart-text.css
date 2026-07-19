@@ -272,6 +272,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1 1 auto; /* fill the card so `.mdbook-card-buttons { margin-top:auto }` bottom-aligns buttons across a row */
 }
 .vp-doc .mdbook-card-title {
   font-weight: 700;
@@ -289,12 +290,20 @@
  * Pinned to the bottom so cards of unequal text length line their buttons up. */
 .vp-doc .mdbook-card-buttons {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   margin-top: auto;
   padding-top: 6px;
 }
+/* Multiple buttons share the row equally; a long label is truncated with an
+ * ellipsis rather than wrapping or unbalancing the widths. A lone button keeps
+ * its natural width. */
 .vp-doc a.mdbook-card-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   display: inline-block;
   padding: 6px 14px;
   border-radius: 8px;
@@ -306,6 +315,10 @@
   background: var(--vp-c-brand-1);
   color: var(--vp-c-white, #fff);
   transition: background-color 0.2s, border-color 0.2s, transform 0.2s, color 0.2s;
+}
+/* A single button keeps its natural (content) width, left-aligned. */
+.vp-doc a.mdbook-card-btn:only-child {
+  flex: 0 0 auto;
 }
 .vp-doc a.mdbook-card-btn:hover {
   background: var(--vp-c-brand-2);
