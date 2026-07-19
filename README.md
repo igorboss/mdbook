@@ -154,6 +154,17 @@ sidebarExtra:
       - { text: Glossary, link: /glossary }
 # sidebar: [ ... ]             # set to fully OVERRIDE the generated sidebar
 
+# Per-locale menu overrides (multilingual sites). By default the shared `nav`
+# above is reused for every locale with its internal links localized
+# (/build -> /lt/build); set a locale's `nav` here to fully control its labels
+# and links, and `label` to rename it in the language switcher.
+locales:
+  lt:
+    label: Lietuvių
+    nav:
+      - { text: Pradžia, link: /lt/ }
+      - { text: Versijos, link: /lt/build }
+
 build:
   out: .mdbook/dist
 ```

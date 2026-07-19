@@ -80,7 +80,9 @@ which is stricter. mdbook normalizes content at build time so these never break:
   **gitbook** sources, additional locales are authored as `<lang>/` subdirectories, each with
   its own `SUMMARY.md` + `README.md` + pages.
 - **Menu.** Built from `pages.json`; groups are collapsible/collapsed like the SSG. Config
-  can add nav/sidebar entries or fully override the sidebar.
+  can add nav/sidebar entries or fully override the sidebar. On multilingual sites the shared
+  `nav`/`sidebarExtra` links are localized per locale (`/build` → `/lt/build`); a `locales:`
+  block can override a locale's menu labels/links and its switcher label.
 - **Page links.** `page:slug` → the internal page when it exists in this build; otherwise
   (and for cross-space `page:space/slug`) → the page on the TermX web wiki
   `{web}/wiki/{space}/{slug}`, so the link still reaches a real page.
