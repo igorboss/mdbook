@@ -79,6 +79,13 @@ which is stricter. mdbook normalizes content at build time so these never break:
   A page appears in a locale only if it is actually translated in that language. For
   **gitbook** sources, additional locales are authored as `<lang>/` subdirectories, each with
   its own `SUMMARY.md` + `README.md` + pages.
+- **Locale-switch redirects.** VitePress's language switcher swaps only the locale prefix
+  (keeping the current slug). When a page's slug differs per language (e.g. `/build` vs
+  `/lt/versijos`, common in TermX where each language has its own slug), the swapped path
+  (`/lt/build`) would 404. mdbook emits a small **redirect stub** at that path — derived from
+  the per-code slug mapping in `pages.json` — that bounces to the real translation, so the
+  switcher always lands on the correct page (`src/ingest/termx.mjs` + the `redirect`
+  front-matter handled in `src/theme/index.mjs`).
 - **Menu.** Built from `pages.json`; groups are collapsible/collapsed like the SSG. Config
   can add nav/sidebar entries or fully override the sidebar. On multilingual sites the shared
   `nav`/`sidebarExtra` links are localized per locale (`/build` → `/lt/build`); a `locales:`

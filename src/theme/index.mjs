@@ -2,7 +2,7 @@
 // skin palettes, smart-text styles, and client-side Mermaid rendering. The
 // active skin's CSS is imported by the generated staging theme file.
 import DefaultTheme from 'vitepress/theme'
-import { useRoute } from 'vitepress'
+import { useRoute, useRouter, useData, withBase } from 'vitepress'
 import { h, onMounted, watch, nextTick } from 'vue'
 import Comments from './comments.mjs'
 import Present from './present.mjs'
@@ -65,16 +65,33 @@ export default {
     }),
   setup() {
     const route = useRoute()
+    const router = useRouter()
+    const { frontmatter } = useData()
+    // Locale-switch redirect stubs (see src/ingest/termx.mjs): a page carrying a
+    // `redirect` front-matter bounces to its real translation. This makes the
+    // language switcher land on the translated page even when its slug differs
+    // per locale (e.g. /lt/build -> /lt/versijos).
+    const redirectIfNeeded = () => {
+      const to = frontmatter.value?.redirect
+      if (to && typeof window !== 'undefined') {
+        router.go(withBase(to))
+        return true
+      }
+      return false
+    }
     const run = () => {
       renderMermaid()
       registerSdViewer()
       markCurrentLink()
     }
     onMounted(() => {
+      if (redirectIfNeeded()) return
       run()
       watch(
         () => route.path,
-        () => nextTick(run)
+        () => nextTick(() => {
+          if (!redirectIfNeeded()) run()
+        })
       )
     })
   }

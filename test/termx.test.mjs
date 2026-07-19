@@ -71,3 +71,29 @@ test('termx ingest: falls back cleanly when the new fields are absent', () => {
   assert.equal(home.description, null)
   assert.equal(home.tags, null)
 })
+
+test('termx ingest: locale-switch redirect stubs for slugs that differ per language', () => {
+  const space = { code: 'sp3', names: { en: 'Space', lt: 'Erdvė' }, defaultLang: 'en', langs: ['en', 'lt'] }
+  const pages = [
+    {
+      code: 'build',
+      contents: [
+        { name: 'Builds', slug: 'build', lang: 'en' },
+        { name: 'Versijos', slug: 'versijos', lang: 'lt' }
+      ],
+      children: []
+    }
+  ]
+  const dir = tmpTermx(space, pages, { build: '# Builds\n', versijos: '# Versijos\n' })
+  const model = ingestTermx(cfgFor(dir, 'en'))
+
+  // Switching EN (/build) -> LT swaps the prefix to /lt/build; a stub there
+  // redirects to the real /lt/versijos.
+  const toLt = model.contentFiles.find((f) => f.dest === 'lt/build.md')
+  assert.ok(toLt, 'stub at the swapped LT path exists')
+  assert.equal(toLt.redirect, '/lt/versijos')
+  // Switching LT (/lt/versijos) -> EN swaps to /versijos; a stub redirects to /build.
+  const toEn = model.contentFiles.find((f) => f.dest === 'versijos.md')
+  assert.ok(toEn, 'stub at the swapped EN path exists')
+  assert.equal(toEn.redirect, '/build')
+})

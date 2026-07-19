@@ -116,6 +116,15 @@ function stageContent(cfg, model) {
   for (const f of model.contentFiles) {
     const dest = path.join(staging, f.dest)
     fs.mkdirSync(path.dirname(dest), { recursive: true })
+    // Locale-switch redirect stub: a page that bounces to its real translation
+    // (see the redirect handling in src/theme/index.mjs). Excluded from search.
+    if (f.redirect) {
+      fs.writeFileSync(
+        dest,
+        `---\nredirect: ${f.redirect}\nsearch: false\naside: false\n---\n\nRedirecting to [${f.redirect}](${f.redirect})…\n`
+      )
+      continue
+    }
     if (f.src.endsWith('.md')) {
       let text = fs.readFileSync(f.src, 'utf8')
       if (isTermx) {

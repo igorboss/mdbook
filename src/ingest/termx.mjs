@@ -147,6 +147,27 @@ export function ingestTermx(cfg) {
     }
   }
 
+  // Locale-switch redirect stubs. VitePress's language switcher swaps only the
+  // locale prefix (keeping the current slug); when a page's slug differs per
+  // language (e.g. `/build` vs `/lt/versijos`) the swapped path (`/lt/build`)
+  // 404s. Emit a stub at that path that redirects to the real translation,
+  // using the per-code slug mapping from pages.json.
+  ;(function collectStubs(nodes) {
+    for (const node of nodes || []) {
+      const contents = (node.contents || []).filter((c) => c.lang && langs.includes(c.lang))
+      for (const from of contents) {
+        for (const to of contents) {
+          if (to.lang === from.lang || to.slug === from.slug) continue
+          const dest = destFor(from.slug, to.lang) // swapped path: to's prefix + from's slug
+          if (seen.has(dest)) continue
+          seen.add(dest)
+          contentFiles.push({ dest, lang: to.lang, redirect: linkFor(to.slug, to.lang) })
+        }
+      }
+      collectStubs(node.children)
+    }
+  })(tree)
+
   // Keep only languages that actually have pages (default language always kept).
   const activeLangs = langs.filter((l) => l === defaultLang || pageCount[l] > 0)
 
