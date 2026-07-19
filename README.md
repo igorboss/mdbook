@@ -7,6 +7,24 @@ themeable, multilingual website — and ships as a **GitHub Action**.
 Built on [VitePress](https://vitepress.dev) (which uses `markdown-it`), so the TermX
 Wiki "smart text" runs natively.
 
+## Showcase
+
+Real sites built with mdbook — click a thumbnail for the live site (see
+[Reference projects](#reference-projects) for each one's `.mdbook/config.yml`):
+
+<table>
+<tr>
+<td width="33%" valign="top"><a href="https://hl7.lt"><img src="docs/assets/mdbook-hl7lt.png" alt="HL7 Lithuania Registry built with mdbook"></a></td>
+<td width="33%" valign="top"><a href="https://termx-health.github.io/tutorial/"><img src="docs/assets/mdbook-tutorial.png" alt="TermX tutorial built with mdbook"></a></td>
+<td width="33%" valign="top"><a href="https://helex-solutions.github.io/ib-portfolio/"><img src="docs/assets/mdbook-portfolio.png" alt="Portfolio built with mdbook"></a></td>
+</tr>
+<tr>
+<td align="center"><a href="https://hl7.lt"><b>HL7 Lithuania Registry</b></a><br><sub>National FHIR IG registry · <code>termx</code> source</sub></td>
+<td align="center"><a href="https://termx-health.github.io/tutorial/"><b>TermX tutorial</b></a><br><sub>Docs with smart-text &amp; terminology · <code>termx</code> source</sub></td>
+<td align="center"><a href="https://helex-solutions.github.io/ib-portfolio/"><b>Portfolio</b></a><br><sub>Personal site · <code>gitbook</code> source</sub></td>
+</tr>
+</table>
+
 ## Features
 
 - 🔎 **Search** — built-in local full-text search (no external service)
