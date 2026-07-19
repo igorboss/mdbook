@@ -61,6 +61,10 @@ function seoHead(bundle) {
       tags.push(['meta', { property: 'og:description', content: description }])
       tags.push(['meta', { name: 'twitter:description', content: description }])
     }
+    // Authored keywords (from the TermX export) -> <meta name="keywords">.
+    const keywords = pd.frontmatter?.keywords
+    const keywordsContent = Array.isArray(keywords) ? keywords.join(', ') : keywords
+    if (keywordsContent) tags.push(['meta', { name: 'keywords', content: keywordsContent }])
     if (imageUrl) {
       tags.push(['meta', { property: 'og:image', content: imageUrl }])
       tags.push(['meta', { name: 'twitter:image', content: imageUrl }])

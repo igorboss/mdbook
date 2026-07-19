@@ -38,7 +38,7 @@ Legend: ✅ full parity · 🟡 works with a caveat · 🔴 not supported static
 | Tabsets | `## {.tabset}` + `### Tab` (+ closing `##`) | ✅ | Pure-CSS tabs (`input:checked + label + .tab`), same markup as the SSG |
 | Link lists | list + `{.links-list}` | ✅ | Shadow cards; a link's trailing `*em*` renders as a divider-separated **subtitle**; the current page's row gets a brand **left accent bar** (also on hover) |
 | Grid lists | list + `{.grid-list}` | ✅ | Zebra-striped rows |
-| Dense | `{.dense}` | 🟡 | Applies to lists; **not to multimd tables** (attrs can't attach to the multimd token) — the orphan marker is stripped so it never shows as text |
+| Dense | `{.dense}` | ✅ | Applies to lists (via attrs) **and** multimd tables (the `tableAttrs` rule attaches an orphaned `{.dense}`/`{…}` after a table to the table element) |
 | Page icons | `icon:` front-matter | ✅ | Rendered as sidebar icons from Font Awesome Free (Pro names aliased to free) |
 | Link schemes | `[t](cs\|csv\|vs\|vsv\|ms\|msv\|concept\|page\|namespace:…)` | ✅ | See §5 for how each resolves |
 | Attachment images | `![](files/<pageId>/<file>)` | ✅ | Rewritten to `/attachments/<pageId>/<file>`, served from the exported `attachments/`; missing local images are dropped so the build never fails |
@@ -105,20 +105,26 @@ tx-server: https://your-termx-host/api/fhir   # FHIR API base (…/fhir)
 
 ## 7. Remaining gaps to close for full parity
 
-1. **`{.dense}` on multimd tables** — attach the class to the table element during staging
-   (markdown-it-attrs can't, after the multimd token).
-2. **Abbreviations** — add `markdown-it-abbr` if any space uses `*[X]:`.
-3. **Concept-matrix columns** — `code`/`display`/`definition` and designation/property columns
+1. **Abbreviations** — add `markdown-it-abbr` if any space uses `*[X]:`.
+2. **Concept-matrix columns** — `code`/`display`/`definition` and designation/property columns
    are supported; exotic property projections may need extra mapping.
-4. **PlantUML / Mermaid offline** — PlantUML needs the render server at view time; both could
+3. **PlantUML / Mermaid offline** — PlantUML needs the render server at view time; both could
    be pre-rendered to static SVG at build time if fully-offline output is required.
+
+Source-syntax convergence (which constructs are rewritten in the wiki so both renderers agree,
+and which are handled here) is specified in the wiki repo's `docs/wiki-mdbook-syntax.md`.
 
 ## 8. Where it's implemented in mdbook
 
 - **Markdown plugins:** `src/markdown/` — `index.mjs` (chain + meta guard), `termx-links.mjs`,
-  `termx-images.mjs`, `termx-embeds.mjs`, `collapsible.mjs`, `tabset.mjs`, `diagrams.mjs`
+  `termx-images.mjs`, `termx-embeds.mjs`, `collapsible.mjs`, `tabset.mjs`, `diagrams.mjs`,
+  `table-attrs.mjs` (orphaned `{…}` after a multimd table)
 - **Build-time expansions / normalization:** `src/ingest/` — `structure-definition.mjs`,
   `concept-matrix.mjs`, `cards.mjs`, `sanitize.mjs`, `images.mjs`
+- **SEO / metadata:** `src/ingest/seo.mjs` + `src/vitepress.mjs` (`seoHead`) — per-page
+  title/description and space-level description/languages/URL are read from the export
+  (`space.json` / `pages.json`) with inference as the fallback; page tags become
+  `<meta name="keywords">`
 - **Ingestion adapters:** `src/ingest/` — `termx.mjs`, `gitbook.mjs`
 - **Client runtime + styles:** `src/theme/` — mermaid + `<tx-sd-view>` registration +
   current-link marking, `styles/smart-text.css`, `skins/`

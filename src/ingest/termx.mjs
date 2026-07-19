@@ -2,8 +2,13 @@
 // Reads space.json + pages.json (the `wiki-ssg` export contract) and the page
 // markdown, producing the unified multilingual site model.
 //
-//   space.json : { web, code, names: { <lang>: <string> } }
-//   pages.json : [ { code, contents: [ { name, slug, lang, ct } ], children: [...] } ]
+//   space.json : { web, code, names: { <lang>: <string> },
+//                  description?: { <lang>: <string> }, defaultLang?, langs?: [...], siteUrl? }
+//   pages.json : [ { code, tags?: [...], contents: [ { name, slug, lang, description? } ], children: [...] } ]
+// The description/defaultLang/langs/siteUrl, per-page description and page-level tags
+// are additive: when absent, mdbook falls back to inference (first-paragraph summary,
+// languages inferred from content, CI-detected URL) exactly as before. Page tags are
+// surfaced as <meta name="keywords">.
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -45,7 +50,9 @@ export function ingestTermx(cfg) {
   const tree = pagesPath ? readJson(pagesPath) : []
 
   const spaceNames = space.names || {}
-  // Languages: union of space names and langs used across page contents.
+  // Languages: prefer the space's explicit list (space.langs), else the union of
+  // space names and langs used across page contents. Inferred langs are always
+  // kept too, so an incomplete explicit list can never drop translated content.
   const langSet = new Set(Object.keys(spaceNames))
   ;(function collect(nodes) {
     for (const n of nodes || []) {
@@ -53,11 +60,17 @@ export function ingestTermx(cfg) {
       collect(n.children)
     }
   })(tree)
+  const exportedLangs = Array.isArray(space.langs) ? space.langs.filter(Boolean) : []
   const configuredDefault = cfg.site.lang
-  const langs = [...langSet]
+  const langs = exportedLangs.length ? [...new Set([...exportedLangs, ...langSet])] : [...langSet]
   if (langs.length === 0) langs.push(configuredDefault || 'en')
-  // Default lang: configured one if available, else first.
-  const defaultLang = langs.includes(configuredDefault) ? configuredDefault : langs[0]
+  // Default lang: the space's own default wins when valid, else the configured
+  // one, else the first language.
+  const exportedDefault = space.defaultLang
+  const defaultLang =
+    [exportedDefault, configuredDefault].find((l) => l && langs.includes(l)) || langs[0]
+  // Space-level description (localized) for the default language, if authored.
+  const spaceDescription = (space.description && space.description[defaultLang]) || ''
 
   const contentFiles = []
   const seen = new Set()
@@ -79,7 +92,11 @@ export function ingestTermx(cfg) {
         const dest = destFor(content.slug, lang)
         if (src && !seen.has(dest)) {
           seen.add(dest)
-          contentFiles.push({ src, dest, lang, title: content.name?.trim() || content.slug, code: node.code })
+          contentFiles.push({
+            src, dest, lang, title: content.name?.trim() || content.slug, code: node.code,
+            description: content.description || null,
+            tags: node.tags?.length ? node.tags : null // page-level; -> <meta keywords>
+          })
           pageCount[lang] = (pageCount[lang] || 0) + 1
         }
         const entry = { text: content.name?.trim() || content.slug, link: linkFor(content.slug, lang) }
@@ -120,7 +137,11 @@ export function ingestTermx(cfg) {
       const src = findPageFile(cfg, first.slug)
       if (src) {
         const dest = lang === defaultLang ? 'index.md' : `${lang}/index.md`
-        contentFiles.push({ src, dest, lang, title: first.name?.trim() || first.slug, code: node.code })
+        contentFiles.push({
+          src, dest, lang, title: first.name?.trim() || first.slug, code: node.code,
+          description: first.description || null,
+          tags: node.tags?.length ? node.tags : null // page-level; -> <meta keywords>
+        })
         home[lang] = dest
       }
     }
@@ -133,6 +154,8 @@ export function ingestTermx(cfg) {
     title: spaceNames[defaultLang] || cfg.site.title || path.basename(cfg.projectRoot),
     web: space.web || cfg.site.web || null,
     spaceCode: space.code || null,
+    description: spaceDescription,
+    siteUrl: space.siteUrl || null,
     langs: activeLangs,
     defaultLang,
     home: home[defaultLang] || null,

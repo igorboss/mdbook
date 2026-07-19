@@ -15,6 +15,7 @@ import { termxEmbeds } from './termx-embeds.mjs'
 import { collapsible } from './collapsible.mjs'
 import { tabset } from './tabset.mjs'
 import { diagrams } from './diagrams.mjs'
+import { tableAttrs } from './table-attrs.mjs'
 
 export function applyMarkdown(md, opts = {}) {
   // Community plugins matching the TermX Wiki renderer's syntax.
@@ -28,6 +29,7 @@ export function applyMarkdown(md, opts = {}) {
     for (const t of state.tokens) if (t.meta == null) t.meta = {}
     return false
   })
+  md.use(tableAttrs) // attach an orphaned `{.dense}`/`{…}` after a multimd table to the table
   md.use(mark) // ==highlight==
   md.use(sub) // H~2~O
   md.use(sup) // x^2^

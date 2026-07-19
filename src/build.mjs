@@ -122,12 +122,16 @@ function stageContent(cfg, model) {
       }
       text = transformGitbookCards(text) // GitBook card tables -> card grid
       text = transformFileEmbeds(text, cfg.site.base) // {% file %} -> PDF/download card
-      // Per-page <title>/<meta description>: page name + first-paragraph summary.
+      // Per-page <title>/<meta description>/<meta keywords>: authored description
+      // (else a first-paragraph summary), and page tags exported as keywords.
       // `termxPage` carries the stable TermX page code (for comment threading etc.).
+      const extra = {}
+      if (f.code) extra.termxPage = f.code
+      if (f.tags?.length) extra.keywords = f.tags
       text = applySeoFrontmatter(text, {
         title: f.title,
-        description: deriveDescription(text),
-        extra: f.code ? { termxPage: f.code } : null
+        description: f.description?.trim() || deriveDescription(text),
+        extra: Object.keys(extra).length ? extra : null
       })
       fs.writeFileSync(dest, text)
     } else {
@@ -203,6 +207,12 @@ async function prepare(projectRoot, overrides = {}) {
   log(`project ${pc.dim(cfg.projectRoot)}`)
   log(`format ${pc.bold(cfg.source.format)}  skin ${pc.bold(cfg.theme.skin)}  base ${pc.bold(cfg.site.base)}`)
   const model = ingest(cfg)
+  // Space-level metadata from the export fills config that wasn't set explicitly
+  // (config still wins; CI/CNAME URL detection still wins over the space's siteUrl).
+  if (!cfg.site.description && model.description) cfg.site.description = model.description
+  if (!cfg.site.url && model.siteUrl) {
+    cfg.site.url = model.siteUrl.endsWith('/') ? model.siteUrl : model.siteUrl + '/'
+  }
   log(
     `ingested ${pc.bold(model.contentFiles.length)} pages, langs [${model.langs.join(', ')}]`
   )

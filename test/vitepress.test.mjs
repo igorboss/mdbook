@@ -57,3 +57,14 @@ test('seoHead: no image -> summary card, no og:image', () => {
   assert.ok(find(tags, (t) => t[1].name === 'twitter:card' && t[1].content === 'summary'))
   assert.equal(find(tags, (t) => t[1].property === 'og:image'), undefined)
 })
+
+test('seoHead: frontmatter keywords -> <meta name="keywords">', () => {
+  const cfg = createMdbookConfig({ title: 'Site', langs: ['en'], defaultLang: 'en' })
+  const tags = cfg.transformHead({
+    pageData: { relativePath: 'foo.md', title: 'Foo', frontmatter: { keywords: ['fhir', 'terminology'] } }
+  })
+  assert.ok(find(tags, (t) => t[1].name === 'keywords' && t[1].content === 'fhir, terminology'))
+
+  const none = cfg.transformHead({ pageData: { relativePath: 'bar.md', title: 'Bar' } })
+  assert.equal(none.find((t) => t[1].name === 'keywords'), undefined)
+})
