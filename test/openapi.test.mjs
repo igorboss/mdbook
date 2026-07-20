@@ -98,7 +98,7 @@ test('selectOperations: every scope from whole document down to one operation', 
 
 test('expandOpenapi: renders searchable markdown for an operation', () => {
   const out = expandOpenapi('{% openapi src="petstore" operation="listPets" %}', specs, { tryIt: true })
-  assert.match(out, /^### `GET` \/pets \{#listpets\}/m, 'heading carries method, path and an anchor')
+  assert.match(out, /^### `GET` `\/pets` \{#listpets\}/m, 'heading carries method, path and an anchor')
   assert.match(out, /_List all pets_/, 'summary')
   assert.match(out, /\| `limit` \| query \| integer \| no \|/, 'parameter row')
   assert.match(out, /\| `200` \| ok \| application\/json \| Pet\[\] \|/, 'response keeps the schema name')
@@ -106,10 +106,36 @@ test('expandOpenapi: renders searchable markdown for an operation', () => {
   assert.match(out, /data-params="\[\{&quot;name&quot;:&quot;limit&quot;,&quot;in&quot;:&quot;query&quot;/, 'parameters travel as data, not scraped from the table')
 })
 
+test('expandOpenapi: operations collapse by default, and a block can expand them', () => {
+  const def = expandOpenapi('{% openapi src="petstore" operation="listPets" %}', specs, { tryIt: false })
+  assert.match(def, /<details class="mdbook-op">/, 'collapsed by default')
+  assert.match(def, /<summary>List all pets<\/summary>/, 'summary line labels the collapsed row')
+  assert.match(def, /\| `limit` \| query \|/, 'the detail is still in the HTML, so search finds it')
+  assert.match(def, /^### `GET` `\/pets`/m, 'the heading stays outside, keeping the anchor and outline')
+
+  const open = expandOpenapi('{% openapi src="petstore" operation="listPets" collapsed="false" %}', specs, { tryIt: false })
+  assert.doesNotMatch(open, /<details/, 'collapsed="false" expands')
+  assert.match(open, /\| `limit` \| query \|/)
+
+  const off = expandOpenapi('{% openapi src="petstore" operation="listPets" %}', specs, { tryIt: false, collapsed: false })
+  assert.doesNotMatch(off, /<details/, 'the site default can turn collapsing off')
+})
+
 test('expandOpenapi: tryIt:false omits the console but keeps the docs', () => {
   const out = expandOpenapi('{% openapi src="petstore" operation="listPets" %}', specs, { tryIt: false })
   assert.doesNotMatch(out, /mdbook-tryit/)
-  assert.match(out, /### `GET` \/pets/)
+  assert.match(out, /### `GET` `\/pets`/)
+})
+
+test('expandOpenapi: a templated path cannot become an empty HTML attribute', () => {
+  // `/pets/{petId}` in bare heading text would be read as an attribute block by
+  // markdown-it-attrs, yielding id="" — and duplicates of that crash VitePress.
+  const m = modelFromDocument('t', {
+    openapi: '3.1.0',
+    paths: { '/pets/{petId}': { get: { operationId: 'getPet', responses: {} } } }
+  })
+  const out = expandOpenapi('{% openapi src="t" %}', { t: m }, { tryIt: false })
+  assert.match(out, /^### `GET` `\/pets\/\{petId\}` \{#getpet\}/m, 'the path is a code span')
 })
 
 test('expandOpenapi: schema block renders a field table', () => {

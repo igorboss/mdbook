@@ -163,7 +163,7 @@ function stageContent(cfg, model, openapiSpecs = {}) {
       }
       // Expand {% openapi %} blocks before hardening, so text pulled out of a
       // spec is sanitized on the same terms as authored prose.
-      if (cfg.openapi) text = expandOpenapi(text, openapiSpecs, { tryIt: cfg.openapi.tryIt })
+      if (cfg.openapi) text = expandOpenapi(text, openapiSpecs, { tryIt: cfg.openapi.tryIt, collapsed: cfg.openapi.collapsed })
       // Harden against VitePress's Vue compiler (stray `<Tag>` / `{{…}}` in prose).
       text = hardenMarkdown(text)
       text = transformGitbookCards(text) // GitBook card tables -> card grid

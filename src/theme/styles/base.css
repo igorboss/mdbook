@@ -471,3 +471,38 @@ a.mdbook-crumb:hover {
   max-height: 420px;
 }
 .mdbook-oauth-callback { color: var(--vp-c-text-2); }
+
+/* Collapsed operations (openapi.collapsed). The detail stays in the HTML — it
+   is only closed — so search still finds it and print still shows it. */
+.mdbook-op {
+  margin: 8px 0 24px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+.mdbook-op > summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+  list-style: none;
+  user-select: none;
+}
+.mdbook-op > summary::-webkit-details-marker { display: none; }
+.mdbook-op > summary::before {
+  content: '▸';
+  display: inline-block;
+  width: 1em;
+  margin-right: 4px;
+  color: var(--vp-c-text-3);
+  transition: transform 0.15s;
+}
+.mdbook-op[open] > summary::before { transform: rotate(90deg); }
+.mdbook-op > summary:hover { color: var(--vp-c-brand-1); }
+.mdbook-op[open] > summary { border-bottom: 1px solid var(--vp-c-divider); }
+/* Inner content gets its own padding; the console keeps its own frame. */
+.mdbook-op > *:not(summary) { margin-inline: 12px; }
+.mdbook-op > *:last-child { margin-bottom: 12px; }
+@media print {
+  .mdbook-op > *:not(summary) { display: block !important; }
+}

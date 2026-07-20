@@ -13,6 +13,9 @@
 //   {% openapi src="petstore" operation="listPets" %}       one operation, by id
 //   {% openapi src="petstore" webhook="newPet" %}           a 3.1 webhook
 //   {% openapi-schema src="petstore" name="Pet" %}          one schema
+//
+// Each operation's detail is collapsed by default (`openapi.collapsed`), so a
+// large document reads as a scannable list; `collapsed="false"` expands a block.
 
 const BLOCK_RE = /^\{%\s*(openapi|openapi-schema)\s+([^%]*?)\s*%\}\s*$/gm
 
@@ -116,18 +119,34 @@ function responseTable(responses) {
 export const opAnchor = (op) =>
   (op.operationId || `${op.method}-${op.path}`).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
+// Wrap an operation's detail in a <details>, so a long document reads as a
+// scannable list of operations. <details> (rather than JS) keeps the content in
+// the static HTML: it is still indexed by search and still printable, it just
+// starts closed. The heading stays outside so anchors and the page outline are
+// unaffected.
+function collapse(summary, body) {
+  return ['<details class="mdbook-op">', `<summary>${summary}</summary>`, '', body, '', '</details>'].join('\n')
+}
+
 function renderOperation(op, model, opts) {
-  const heading = op.kind === 'webhook' ? `\`${op.method}\` ${op.path} (webhook)` : `\`${op.method}\` ${op.path}`
+  // The path goes in a code span: templated segments like `/pets/{petId}` would
+  // otherwise look like an attribute block to markdown-it-attrs, which turns
+  // `{petId}` into an empty HTML attribute. Code spans are left alone.
+  const heading =
+    op.kind === 'webhook' ? `\`${op.method}\` \`${op.path}\` (webhook)` : `\`${op.method}\` \`${op.path}\``
   const out = [`### ${heading} {#${opAnchor(op)}}`, '']
   if (op.deprecated) out.push('> **Deprecated**', '')
   if (op.summary) out.push(`_${op.summary}_`, '')
-  if (op.description) out.push(op.description, '')
+
+  // Everything below the heading is the "detail" — optionally collapsed.
+  const detail = []
+  if (op.description) detail.push(op.description, '')
   const p = paramTable(op.parameters)
-  if (p) out.push(p)
+  if (p) detail.push(p)
   const b = bodyTable(op.requestBody, model)
-  if (b) out.push(b)
+  if (b) detail.push(b)
   const r = responseTable(op.responses)
-  if (r) out.push(r)
+  if (r) detail.push(r)
   if (opts.tryIt && op.kind !== 'webhook') {
     // Island for the console; everything above stays plain, searchable markdown.
     // The parameters travel as data rather than being scraped back out of the
@@ -137,13 +156,17 @@ function renderOperation(op, model, opts) {
       .filter((p) => ['path', 'query', 'header'].includes(p.in))
       .map((p) => ({ name: p.name, in: p.in, required: !!p.required }))
     const data = JSON.stringify(params).replace(/"/g, '&quot;')
-    out.push(
+    detail.push(
       `<div class="mdbook-tryit" data-spec="${model.name}" data-method="${op.method}" ` +
         `data-path="${encodeURI(op.path)}" data-server="${encodeURI(server)}" ` +
         `data-params="${data}"></div>`,
       ''
     )
   }
+
+  const body = detail.join('\n').trim()
+  if (!body) return out.join('\n')
+  out.push(opts.collapsed ? collapse(op.summary || 'Details', body) : body)
   return out.join('\n')
 }
 
@@ -173,6 +196,7 @@ function renderSchema(model, name) {
 export function expandOpenapi(text, specs, opts = {}) {
   if (!text.includes('{% openapi')) return text
   const tryIt = opts.tryIt ?? true
+  const collapsedDefault = opts.collapsed ?? true
   return text.replace(BLOCK_RE, (whole, kind, attrStr) => {
     const attrs = parseAttrs(attrStr)
     const model = specs?.[attrs.src]
@@ -182,6 +206,8 @@ export function expandOpenapi(text, specs, opts = {}) {
 
     const ops = selectOperations(model, attrs)
     if (!ops.length) return `> OpenAPI: no operation in \`${attrs.src}\` matched this selector.`
-    return ops.map((op) => renderOperation(op, model, { tryIt })).join('\n\n')
+    // A block may override the site default: collapsed="false" to expand.
+    const collapsed = attrs.collapsed == null ? collapsedDefault : !/^(false|no|0)$/i.test(attrs.collapsed)
+    return ops.map((op) => renderOperation(op, model, { tryIt, collapsed })).join('\n\n')
   })
 }

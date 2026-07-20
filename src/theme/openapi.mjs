@@ -52,7 +52,20 @@ function buildConsole(root, cfg) {
     return el('label', { class: 'mdbook-tryit-field' }, [el('span', {}, p.name), input])
   })
 
-  const serverSel = el('select', { class: 'mdbook-tryit-input' }, servers.filter(Boolean).map((s) => el('option', {}, s)))
+  // Editable rather than a dropdown: plenty of documents declare no `servers` at
+  // all (or only a demo host), and the reader still needs somewhere to send the
+  // request. Known servers are offered as suggestions.
+  const known = servers.filter(Boolean)
+  const listId = `mdbook-servers-${Math.random().toString(36).slice(2, 8)}`
+  const serverSel = el('input', {
+    class: 'mdbook-tryit-input',
+    value: known[0] || '',
+    placeholder: 'https://api.example.com',
+    list: known.length ? listId : null
+  })
+  const serverList = known.length
+    ? el('datalist', { id: listId }, known.map((s) => el('option', { value: s })))
+    : null
   const bodyArea = hasBody ? el('textarea', { class: 'mdbook-tryit-body', rows: '6', placeholder: '{ }' }) : null
   const out = el('pre', { class: 'mdbook-tryit-out' })
   const authNote = el('span', { class: 'mdbook-tryit-auth' })
@@ -85,7 +98,12 @@ function buildConsole(root, cfg) {
   const send = async () => {
     out.textContent = 'Sending…'
     const values = Object.fromEntries(Object.entries(fields).map(([k, f]) => [k, f.input.value]))
-    const url = new URL(fillPath(pathTpl, values), serverSel.value || location.origin)
+    // Concatenate, never `new URL(path, server)`: an operation path is absolute,
+    // so URL resolution would discard the server's own base path — turning
+    // https://host/api/fhir + /CodeSystem into https://host/CodeSystem.
+    let base = (serverSel.value || location.origin).trim().replace(/\/+$/, '')
+    if (!/^https?:\/\//i.test(base)) base = location.origin.replace(/\/+$/, '') + (base.startsWith('/') ? base : `/${base}`)
+    const url = new URL(base + fillPath(pathTpl, values))
     const headers = {}
     for (const [k, f] of Object.entries(fields)) {
       if (!f.input.value) continue
@@ -127,7 +145,7 @@ function buildConsole(root, cfg) {
       el('button', { class: 'mdbook-tryit-btn is-primary', type: 'button', onClick: send }, 'Send')
     ]),
     el('div', { class: 'mdbook-tryit-form' }, [
-      el('label', { class: 'mdbook-tryit-field' }, [el('span', {}, 'server'), serverSel]),
+      el('label', { class: 'mdbook-tryit-field' }, [el('span', {}, 'server'), serverSel, serverList].filter(Boolean)),
       ...paramRows,
       ...(bodyArea ? [el('label', { class: 'mdbook-tryit-field is-wide' }, [el('span', {}, 'body'), bodyArea])] : [])
     ]),

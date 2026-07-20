@@ -136,6 +136,10 @@ function normalizeOpenapi(data, projectRoot) {
   return {
     specs,
     tryIt: data.tryIt ?? data['try-it'] ?? true,
+    // Operations render collapsed by default: a document with hundreds of
+    // operations is unreadable fully expanded. The detail stays in the HTML, so
+    // search still finds it.
+    collapsed: data.collapsed ?? true,
     auth: auth
       ? {
           clientId: auth.clientId || auth['client-id'] || null,

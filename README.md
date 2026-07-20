@@ -337,6 +337,25 @@ Each block expands to **markdown** — headings, parameter/response tables, desc
 operations appear in the page outline and in site search like any other content, and work
 with no JavaScript. Only the try-it console is interactive.
 
+### Collapsed by default
+
+A document with hundreds of operations is unreadable fully expanded, so each operation's
+detail renders inside a `<details>` and starts **closed** — the page reads as a scannable
+list of `METHOD /path` rows. The heading stays outside the fold, so anchors, deep links and
+the page outline are unaffected, and because the detail is still in the HTML (merely closed)
+it remains fully searchable and prints expanded.
+
+```yaml
+openapi:
+  collapsed: true    # default; false renders every operation expanded
+```
+
+Override per block with `collapsed="false"`:
+
+```
+{% openapi src="petstore" operation="listPets" collapsed="false" %}
+```
+
 ### Try it, with OpenID Connect
 
 The API document already declares *where* to authenticate — a `securityScheme` of
