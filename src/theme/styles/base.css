@@ -347,3 +347,29 @@ a.mdbook-crumb:hover {
 }
 /* Presentation mode has its own sizing; keep the control out of the way. */
 .mdbook-present .mdbook-zoom { display: none !important; }
+
+/* ── Code citations (src/markdown/code-citation.mjs) ───────────────────────
+   A fence whose info string names a source file gets that path as a caption
+   above the block; the block itself is highlighted by the file's extension. */
+.mdbook-code-cite {
+  margin: 16px 0;
+}
+.mdbook-code-cite-path {
+  display: inline-block;
+  max-width: 100%;
+  padding: 5px 12px;
+  border: 1px solid var(--vp-c-divider);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+/* The caption and the block read as one unit. */
+.mdbook-code-cite div[class*='language-'] {
+  margin-top: 0;
+  border-top-left-radius: 0;
+}

@@ -16,6 +16,7 @@ import { collapsible } from './collapsible.mjs'
 import { tabset } from './tabset.mjs'
 import { cardGrid } from './card-grid.mjs'
 import { diagrams } from './diagrams.mjs'
+import { codeCitation } from './code-citation.mjs'
 import { tableAttrs } from './table-attrs.mjs'
 
 export function applyMarkdown(md, opts = {}) {
@@ -62,6 +63,7 @@ export function applyMarkdown(md, opts = {}) {
   md.use(tabset) // ## {.tabset} + ### tabs  ->  pure-CSS tabs
   md.use(cardGrid) // list {.card-grid}  ->  card grid with cover/title/desc/buttons
   md.use(diagrams, opts) // ```drawio ```plantuml ```mermaid
+  md.use(codeCitation) // ```43:58:path/File.java -> highlighted java + a file caption
   md.use(termxLinks, opts) // [t](page:slug) [t](cs:code) [t](vs:code) [t](concept:cs|code)
   md.use(termxImages, opts) // ![](files/<pageId>/<file>)
 
