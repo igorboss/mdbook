@@ -74,6 +74,7 @@ export function loadConfig(projectRoot, overrides = {}) {
     search: typeof data.search === 'object' && data.search ? (data.search.enabled ?? true) : (data.search ?? true),
     searchExclude:
       (typeof data.search === 'object' && data.search && data.search.exclude) || [],
+    openapi: normalizeOpenapi(data.openapi, projectRoot),
     comments: data.comments || null, // e.g. { provider: giscus, repo, repoId, category, categoryId }
     footer: data.footer || null, // site footer: { message, copyright } (inline HTML allowed)
     locales: data.locales || null, // resolved from content when null
@@ -104,6 +105,48 @@ export function applySpaceConfig(cfg, model) {
   if (ssg.search != null && raw.search == null) cfg.search = ssg.search
   if (ssg.logo && !cfg.site.logo) cfg.site.logo = ssg.logo
   return cfg
+}
+
+// Normalize the `openapi:` block.
+//
+//   openapi:
+//     specs:                       # name -> local file or URL; pages cite the name
+//       petstore: ./api/petstore.yaml
+//       billing:  https://api.example.com/openapi.json
+//     tryIt: true                  # interactive console (default: on)
+//     auth:                        # ONLY what an OpenAPI document cannot declare
+//       clientId: docs-portal      #   the spec's securitySchemes own the endpoints
+//       scopes: [openid, api.read]
+//       pkce: true
+//       redirectUri: /oauth2/callback
+//       issuer: https://id.example.com/realms/x   # fallback when the spec has no
+//                                                 # openIdConnect scheme
+//
+// There is deliberately no `openapi: true` switch — declaring specs enables the
+// feature, so the two can never disagree. `enabled: false` still turns it off.
+function normalizeOpenapi(data, projectRoot) {
+  if (!data || data.enabled === false) return null
+  const specs = {}
+  for (const [name, src] of Object.entries(data.specs || {})) {
+    if (!src) continue
+    specs[name] = /^https?:\/\//i.test(src) ? String(src) : path.resolve(projectRoot, src)
+  }
+  if (!Object.keys(specs).length) return null
+  const auth = data.auth || null
+  return {
+    specs,
+    tryIt: data.tryIt ?? data['try-it'] ?? true,
+    auth: auth
+      ? {
+          clientId: auth.clientId || auth['client-id'] || null,
+          issuer: (auth.issuer || null)?.replace?.(/\/$/, '') || null,
+          scopes: auth.scopes || ['openid'],
+          pkce: auth.pkce ?? true, // public client: PKCE is the only safe flow
+          redirectUri: auth.redirectUri || auth['redirect-uri'] || '/oauth2/callback',
+          audience: auth.audience || null
+        }
+      : null
+  }
 }
 
 function detectFormat(projectRoot) {

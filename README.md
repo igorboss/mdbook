@@ -35,6 +35,7 @@ Real sites built with mdbook — click a thumbnail for the live site (see
 - 🧩 **TermX smart-text** — callouts, tabsets, links-list/grid-list, `+++` collapsibles, `page:`/`cs:`/`vs:`/`concept:` links, `files/` images, page icons, GitBook card tables
 - 📊 **Diagrams** — drawio, Mermaid, PlantUML
 - 💻 **Code** — Shiki highlighting for every fenced block; a fence that cites a source file (```` ```43:58:src/Foo.java ````) is highlighted by the file's extension and captioned with the path
+- 🌐 **OpenAPI** — render one or many OpenAPI 3.1 / 3.0 / Swagger 2.0 documents into searchable reference pages, from a whole document down to a single operation, with an optional try-it console authenticated via OpenID Connect (see [OpenAPI](#openapi))
 - 🔗 **Terminology** — `{{def:}}` StructureDefinition viewer, and `{{csc:}}`/`{{vsc:}}` concept tables fetched from a FHIR server at build time
 - 🏷️ **SEO** — per-page titles/descriptions, `sitemap.xml`, canonical + Open Graph/Twitter tags, JSON-LD and `robots.txt`. Descriptions, languages and site URL are read from the TermX export when authored (site URL also auto-detected in CI), with first-paragraph/CI inference as the fallback; page **tags** are emitted as `<meta name="keywords">`
 - 💬 **Comments** — optional [Giscus](https://giscus.app) (GitHub Discussions) box per page (see [Comments](#comments-github-discussions))
@@ -147,6 +148,16 @@ source:
     - _templates               #   folder name -> the whole subtree
     - agents/notes             #   path -> matches from the content root
     - "*.draft.md"             #   `*` within a segment, `**` across segments
+
+# API reference — see the OpenAPI section below.
+openapi:
+  specs:                       # name -> local file or URL; pages cite the name
+    petstore: ./api/petstore.yaml
+  tryIt: true                  # interactive console (default: true)
+  auth:                        # only what an OpenAPI document cannot declare
+    clientId: docs-portal
+    scopes: [openid, profile]
+    redirectUri: /oauth2/callback
 
 theme:
   skin: default                # default | ocean | paper | helex | taltech | hl7lt
@@ -292,6 +303,64 @@ item may carry an image (cover), a heading (title), text (description) and links
   [History](https://hl7.lt/fhir/base/history.html){.button .secondary}
 {.card-grid}
 ```
+
+## OpenAPI
+
+Point mdbook at one or more API documents and embed them in your pages. **OpenAPI 3.1**,
+3.0 and Swagger 2.0 are all accepted; documents may be local files or URLs.
+
+```yaml
+openapi:
+  specs:
+    petstore: ./api/petstore.yaml
+    billing:  https://api.example.com/openapi.json
+```
+
+Documents are read **at build time**, not in the browser. That means the site works on an
+air-gapped network, the docs are pinned to the spec they were built from, and — unlike a
+client-side viewer — your API does **not** need to allow CORS from the docs site. A resolved
+document is cached, so a later build still succeeds if a remote spec is briefly unreachable.
+
+### Embedding — from whole document to one operation
+
+```
+{% openapi src="petstore" %}                            the whole document
+{% openapi src="petstore" tag="Pets" %}                 one tag
+{% openapi src="petstore" path="/pets" %}               every method on a path
+{% openapi src="petstore" path="/pets" method="get" %}  one operation
+{% openapi src="petstore" operation="listPets" %}       one operation, by operationId
+{% openapi src="petstore" webhook="newPet" %}           a 3.1 webhook
+{% openapi-schema src="petstore" name="Pet" %}          one schema
+```
+
+Each block expands to **markdown** — headings, parameter/response tables, descriptions — so
+operations appear in the page outline and in site search like any other content, and work
+with no JavaScript. Only the try-it console is interactive.
+
+### Try it, with OpenID Connect
+
+The API document already declares *where* to authenticate — a `securityScheme` of
+`type: openIdConnect` carries a discovery URL, and `type: oauth2` carries the endpoints.
+mdbook reads those, so config only supplies what a document cannot know:
+
+```yaml
+openapi:
+  tryIt: true
+  auth:
+    clientId: docs-portal          # public client
+    scopes: [openid, profile, api.read]
+    redirectUri: /oauth2/callback  # must be registered with your provider
+    issuer: https://id.example.com/realms/x   # only if the spec declares no scheme
+    audience: https://api.example.com         # optional
+```
+
+mdbook generates the page at `redirectUri` for you. Login is **Authorization Code with
+PKCE** — the only flow that is safe for a client that cannot keep a secret. There is
+deliberately no support for a client secret or the implicit flow, and the access token is
+held in `sessionStorage` (gone when the tab closes), never placed in a URL.
+
+Set `tryIt: false` to render the reference documentation without any console — useful when
+the API is internal and only the docs are public.
 
 ## Comments (GitHub Discussions)
 

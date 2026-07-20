@@ -60,6 +60,7 @@ function themeConfigFor(bundle, lang) {
     ...(bundle.logo ? { logo: bundle.logo } : {}),
     ...(bundle.comments ? { comments: bundle.comments } : {}),
     ...(bundle.footer ? { footer: bundle.footer } : {}),
+    ...(bundle.openapi ? { openapi: bundle.openapi } : {}),
     outline: bundle.outline || [2, 3]
   }
 }
