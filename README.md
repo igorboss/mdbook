@@ -372,7 +372,41 @@ Override per block with `collapsed="false"`:
 {% openapi src="petstore" operation="listPets" collapsed="false" %}
 ```
 
-### Try it, with OpenID Connect
+### Base URL
+
+The console sends requests to the document's declared `servers`. A generated document often
+names the address the *service* sees itself on — springdoc emits `http://127.0.0.1:8080` —
+which no reader can reach, so mdbook resolves the base in this order:
+
+1. an explicit `server:` in config (per spec, or one default for all);
+2. any declared server that is not loopback;
+3. **the origin the document was fetched from** — reachable by definition, since the build
+   just used it.
+
+```yaml
+openapi:
+  server: https://api.example.com   # default for every spec
+  specs:
+    billing:
+      url: https://api.example.com/billing/api-docs
+      server: https://staging.example.com   # override for one spec
+```
+
+### Calling an API that sends no CORS headers
+
+An API served from the same origin as its own frontend has no reason to send CORS headers —
+so a docs site on a *different* origin cannot call it from the browser, and the console
+reports `Failed to fetch`. Rather than widening the API's exposure, proxy it through the dev
+server: the browser then only talks to the docs' own origin, and CORS never applies.
+
+```yaml
+openapi:
+  proxy:
+    /api: https://api.example.com
+```
+
+Applies to `mdbook dev` only. Leave the console's **server** field empty to use it — an empty
+field falls back to the page's own origin, which is what the proxy is listening on.
 
 The API document already declares *where* to authenticate — a `securityScheme` of
 `type: openIdConnect` carries a discovery URL, and `type: oauth2` carries the endpoints.

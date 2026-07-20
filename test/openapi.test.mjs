@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { modelFromDocument, authFromSchemes, expandEnv } from '../src/ingest/openapi.mjs'
+import { modelFromDocument, authFromSchemes, expandEnv, effectiveServers } from '../src/ingest/openapi.mjs'
 import { expandOpenapi, parseAttrs, typeOf, selectOperations } from '../src/ingest/openapi-render.mjs'
 
 const DOC = {
@@ -173,4 +173,38 @@ test('expandEnv: an unset or empty variable is reported, never substituted liter
   const out = expandEnv('Bearer ${TOK} ${OTHER}', missing, { TOK: '' })
   assert.doesNotMatch(out, /\$\{/, 'no literal ${VAR} is ever sent upstream')
   assert.deepEqual(missing.sort(), ['OTHER', 'TOK'], 'both names are reported')
+})
+
+test('effectiveServers: a loopback server is replaced by the origin it was fetched from', () => {
+  // springdoc emits http://127.0.0.1:8080 — the address the service sees itself
+  // on, which no reader can reach. The fetch origin demonstrably works.
+  const out = effectiveServers([{ url: 'http://127.0.0.1:8080' }], {
+    sourceUrl: 'https://emr.example.com/api/acc/api-docs'
+  })
+  assert.deepEqual(out, [{ url: 'https://emr.example.com' }])
+})
+
+test('effectiveServers: a routable declared server is left alone', () => {
+  const declared = [{ url: 'https://api.example.com/v1' }]
+  assert.deepEqual(effectiveServers(declared, { sourceUrl: 'https://elsewhere/spec' }), declared)
+})
+
+test('effectiveServers: an explicit override beats everything', () => {
+  const out = effectiveServers([{ url: 'https://api.example.com' }], { server: 'https://staging.example.com/' })
+  assert.deepEqual(out, [{ url: 'https://staging.example.com' }], 'trailing slash trimmed')
+})
+
+test('effectiveServers: a local file spec with only a loopback server keeps it', () => {
+  const declared = [{ url: 'http://localhost:3000' }]
+  assert.deepEqual(effectiveServers(declared, { sourceUrl: '/tmp/api.yaml' }), declared)
+})
+
+test('modelFromDocument: the reachable server reaches operations too', () => {
+  const m = modelFromDocument('acc', {
+    openapi: '3.1.0',
+    servers: [{ url: 'http://127.0.0.1:8080' }],
+    paths: { '/api/acc/x': { get: { operationId: 'getX', responses: {} } } }
+  }, { sourceUrl: 'https://emr.example.com/api/acc/api-docs' })
+  assert.deepEqual(m.servers, [{ url: 'https://emr.example.com' }])
+  assert.deepEqual(m.operations[0].servers, [{ url: 'https://emr.example.com' }])
 })

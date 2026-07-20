@@ -144,13 +144,21 @@ function normalizeOpenapi(data, projectRoot) {
     const headers = defaultHeaders || own ? { ...(defaultHeaders || {}), ...(own || {}) } : null
     specs[name] = {
       url: /^https?:\/\//i.test(src) ? String(src) : path.resolve(projectRoot, src),
-      headers
+      headers,
+      // Overrides whatever the document declares — a generated one often names
+      // the address the service sees itself on rather than a reachable base.
+      server: (typeof value === 'object' && value?.server) || null
     }
   }
   if (!Object.keys(specs).length) return null
   const auth = data.auth || null
   return {
     specs,
+    server: data.server || null, // default base URL for every spec
+    // Dev-server proxy: { '/api': 'https://host' }. The try-it console then
+    // calls the docs' own origin, so the browser never makes a cross-origin
+    // request and the API needs no CORS headers. Applies to `dev` only.
+    proxy: data.proxy || null,
     tryIt: data.tryIt ?? data['try-it'] ?? true,
     // Operations render collapsed by default: a document with hundreds of
     // operations is unreadable fully expanded. The detail stays in the HTML, so

@@ -2,6 +2,24 @@
 // Called by the generated staging `.vitepress/config.mjs`.
 import { applyMarkdown } from './markdown/index.mjs'
 
+// `openapi.proxy` -> Vite dev-server proxy. Requests from the try-it console
+// then leave the browser same-origin and are forwarded by the dev server, so an
+// API that sends no CORS headers is still reachable while developing locally.
+// `changeOrigin` makes the upstream see its own Host, which virtual-hosted APIs
+// (and TLS SNI) require.
+function proxyConfig(bundle) {
+  const proxy = bundle.openapi?.proxy
+  if (!proxy || !Object.keys(proxy).length) return {}
+  return {
+    proxy: Object.fromEntries(
+      Object.entries(proxy).map(([path, target]) => [
+        path,
+        typeof target === 'string' ? { target, changeOrigin: true, secure: true } : target
+      ])
+    )
+  }
+}
+
 // Merge the auto-generated sidebar with user overrides/extensions from .mdbook.
 // `generated` is a sidebar array (from SUMMARY.md) or a multi-sidebar object
 // (auto-derived from the folder tree, keyed by section path).
@@ -180,8 +198,8 @@ export function createMdbookConfig(bundle) {
     // Don't watch mdbook's own source as config deps — editing the tool while a
     // project dev server runs would otherwise restart it (Shiki-dispose race).
     ...(bundle.mdbookDir
-      ? { vite: { server: { watch: { ignored: [`${bundle.mdbookDir}/**`] } } } }
-      : {})
+      ? { vite: { server: { watch: { ignored: [`${bundle.mdbookDir}/**`] }, ...proxyConfig(bundle) } } }
+      : { vite: { server: proxyConfig(bundle) } })
   }
 
   // Single language: flat config. Multiple: VitePress `locales`.

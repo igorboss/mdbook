@@ -28,9 +28,30 @@ function fromSwagger2(doc) {
   }
 }
 
+// A generated document often declares the address the service sees itself on —
+// springdoc emits http://127.0.0.1:8080 — which is useless to a reader. Prefer,
+// in order: an explicit `server:` from config, any declared server that is not
+// loopback, then the origin the document was fetched from (which is by
+// definition reachable, since the build just used it).
+const LOOPBACK = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(?::\d+)?(?:\/|$)/i
+
+export function effectiveServers(declared = [], { sourceUrl, server } = {}) {
+  if (server) return [{ url: String(server).replace(/\/+$/, '') }]
+  const routable = declared.filter((s) => s?.url && !LOOPBACK.test(s.url))
+  if (routable.length) return routable
+  if (sourceUrl && /^https?:/i.test(sourceUrl)) {
+    try {
+      return [{ url: new URL(sourceUrl).origin }]
+    } catch {
+      /* fall through to whatever was declared */
+    }
+  }
+  return declared
+}
+
 // Flatten a resolved document into { title, version, servers, securitySchemes,
 // operations[], schemas{}, webhooks[] }.
-export function modelFromDocument(name, raw) {
+export function modelFromDocument(name, raw, opts = {}) {
   const doc = raw.swagger?.startsWith('2') ? fromSwagger2(raw) : raw
   // Kept so the renderer can follow the internal $refs that bundle() preserves.
   const operations = []
@@ -57,7 +78,7 @@ export function modelFromDocument(name, raw) {
         requestBody: op.requestBody || null,
         responses: op.responses || {},
         security: op.security ?? doc.security ?? null,
-        servers: op.servers || item.servers || doc.servers || []
+        servers: effectiveServers(op.servers || item.servers || doc.servers || [], opts)
       })
     }
   }
@@ -72,7 +93,7 @@ export function modelFromDocument(name, raw) {
     title: doc.info?.title || name,
     version: doc.info?.version || '',
     description: doc.info?.description || '',
-    servers: doc.servers || [],
+    servers: effectiveServers(doc.servers || [], opts),
     securitySchemes: doc.components?.securitySchemes || {},
     schemas: doc.components?.schemas || {},
     operations,
@@ -189,7 +210,7 @@ export async function loadOpenapiSpecs(cfg, log = () => {}) {
         continue
       }
     }
-    out[name] = modelFromDocument(name, doc)
+    out[name] = modelFromDocument(name, doc, { sourceUrl: src, server: spec.server || cfg.openapi.server })
   }
 
   const names = Object.keys(out)

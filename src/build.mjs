@@ -84,7 +84,12 @@ function makeBundle(cfg, model) {
     footer: cfg.footer || null,
     wide: cfg.theme.wide ?? false, // full-width layout (wide tables / reference docs)
     openapi: cfg.openapi
-      ? { tryIt: cfg.openapi.tryIt, auth: cfg.openapi.auth, specs: cfg.openapi.resolved || {} }
+      ? {
+          tryIt: cfg.openapi.tryIt,
+          auth: cfg.openapi.auth,
+          specs: cfg.openapi.resolved || {},
+          proxy: cfg.openapi.proxy || null
+        }
       : null,
     web,
     txServer: cfg.txServer,
