@@ -17,6 +17,8 @@ import { applySeoFrontmatter, deriveDescription } from './ingest/seo.mjs'
 import { auditLinks } from './ingest/links.mjs'
 import { expandStructureDefinitions } from './ingest/structure-definition.mjs'
 import { expandConceptMatrices } from './ingest/concept-matrix.mjs'
+import { loadOpenapiSpecs, authFromSchemes } from './ingest/openapi.mjs'
+import { expandOpenapi } from './ingest/openapi-render.mjs'
 
 const MDBOOK_SRC = path.dirname(fileURLToPath(import.meta.url)) // .../mdbook/src
 
@@ -81,6 +83,14 @@ function makeBundle(cfg, model) {
     comments: cfg.comments || null,
     footer: cfg.footer || null,
     wide: cfg.theme.wide ?? false, // full-width layout (wide tables / reference docs)
+    openapi: cfg.openapi
+      ? {
+          tryIt: cfg.openapi.tryIt,
+          auth: cfg.openapi.auth,
+          specs: cfg.openapi.resolved || {},
+          proxy: cfg.openapi.proxy || null
+        }
+      : null,
     web,
     txServer: cfg.txServer,
     spaceCode: model.spaceCode || null,
@@ -112,7 +122,7 @@ function breadcrumbsFor(dest, folderLabels, destSet, base = '/') {
   return crumbs
 }
 
-function stageContent(cfg, model) {
+function stageContent(cfg, model, openapiSpecs = {}) {
   const staging = cfg.build.staging
   fs.rmSync(staging, { recursive: true, force: true })
   fs.mkdirSync(staging, { recursive: true })
@@ -156,6 +166,13 @@ function stageContent(cfg, model) {
         text = sanitizeTermxMarkdown(text)
         text = expandStructureDefinitions(text, sdDirs) // {{def:…}} -> <tx-sd-view>
       }
+      // Expand {% openapi %} blocks before hardening, so text pulled out of a
+      // spec is sanitized on the same terms as authored prose.
+      if (cfg.openapi) text = expandOpenapi(text, openapiSpecs, {
+          tryIt: cfg.openapi.tryIt,
+          collapsed: cfg.openapi.collapsed,
+          configured: Object.keys(cfg.openapi.specs)
+        })
       // Harden against VitePress's Vue compiler (stray `<Tag>` / `{{…}}` in prose).
       text = hardenMarkdown(text)
       text = transformGitbookCards(text) // GitBook card tables -> card grid
@@ -183,6 +200,20 @@ function stageContent(cfg, model) {
     } else {
       fs.copyFileSync(f.src, dest)
     }
+  }
+
+  // OIDC redirect target. The authorization server will only redirect to a
+  // pre-registered URI, so the site needs one real page to land on; the theme
+  // finishes the code exchange there and returns the reader to their page.
+  if (cfg.openapi?.auth?.redirectUri) {
+    const rel = cfg.openapi.auth.redirectUri.replace(/^\//, '').replace(/\/$/, '') || 'oauth2/callback'
+    const dest = path.join(staging, `${rel}.md`)
+    fs.mkdirSync(path.dirname(dest), { recursive: true })
+    fs.writeFileSync(
+      dest,
+      '---\ntitle: Signing in\noauthCallback: true\nsearch: false\naside: false\n---\n\n' +
+        '# Signing in\n\n<div class="mdbook-oauth-callback">Completing sign-in…</div>\n'
+    )
   }
 
   // Copy relative asset directories (e.g. .gitbook/assets) alongside the content
@@ -259,7 +290,18 @@ async function prepare(projectRoot, overrides = {}) {
   log(
     `ingested ${pc.bold(model.contentFiles.length)} pages, langs [${model.langs.join(', ')}]`
   )
-  const staging = stageContent(cfg, model)
+  const openapiSpecs = await loadOpenapiSpecs(cfg, log)
+  // Per-spec auth: the document's own securityScheme supplies the endpoints, the
+  // config supplies the client-side bits a document cannot know.
+  if (cfg.openapi) {
+    cfg.openapi.resolved = Object.fromEntries(
+      Object.entries(openapiSpecs).map(([name, m]) => [
+        name,
+        { servers: m.servers?.map((s) => s.url) || [], auth: authFromSchemes(m.securitySchemes) }
+      ])
+    )
+  }
+  const staging = stageContent(cfg, model, openapiSpecs)
   if (cfg.source.format === 'termx' && cfg.txServer) {
     log(`expanding {{csc}}/{{vsc}} from ${pc.dim(cfg.txServer)}`)
     await expandConceptMatrices(staging, cfg.txServer)

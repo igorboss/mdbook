@@ -373,3 +373,136 @@ a.mdbook-crumb:hover {
   margin-top: 0;
   border-top-left-radius: 0;
 }
+
+/* ── OpenAPI try-it console (src/theme/openapi.mjs) ────────────────────────
+   The operation docs above each console are static markdown; this styles only
+   the interactive island. */
+.mdbook-tryit {
+  margin: 12px 0 28px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+  overflow: hidden;
+}
+.mdbook-tryit-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+.mdbook-tryit-method {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 7px;
+  border-radius: 5px;
+  color: #fff;
+  background: var(--vp-c-text-3);
+}
+.mdbook-tryit-method.m-get { background: #2563eb; }
+.mdbook-tryit-method.m-post { background: #16a34a; }
+.mdbook-tryit-method.m-put,
+.mdbook-tryit-method.m-patch { background: #d97706; }
+.mdbook-tryit-method.m-delete { background: #dc2626; }
+.mdbook-tryit-path {
+  font-size: 13px;
+  color: var(--vp-c-text-1);
+  overflow-wrap: anywhere;
+}
+.mdbook-tryit-auth {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+}
+.mdbook-tryit-auth.is-on { color: var(--vp-c-brand-1); }
+.mdbook-tryit-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  cursor: pointer;
+}
+.mdbook-tryit-btn:hover { border-color: var(--vp-c-brand-1); color: var(--vp-c-brand-1); }
+.mdbook-tryit-btn.is-primary {
+  background: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  color: #fff;
+}
+.mdbook-tryit-btn.is-primary:hover { opacity: 0.9; color: #fff; }
+.mdbook-tryit-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  padding: 12px;
+}
+.mdbook-tryit-field { display: flex; flex-direction: column; gap: 4px; }
+.mdbook-tryit-field.is-wide { grid-column: 1 / -1; }
+.mdbook-tryit-field > span {
+  font-size: 12px;
+  font-family: var(--vp-font-family-mono);
+  color: var(--vp-c-text-2);
+}
+.mdbook-tryit-input,
+.mdbook-tryit-body {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  font-family: var(--vp-font-family-mono);
+}
+.mdbook-tryit-out:empty { display: none; }
+.mdbook-tryit-out {
+  margin: 0;
+  padding: 12px;
+  border-top: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 420px;
+}
+.mdbook-oauth-callback { color: var(--vp-c-text-2); }
+
+/* Collapsed operations (openapi.collapsed). The detail stays in the HTML — it
+   is only closed — so search still finds it and print still shows it. */
+.mdbook-op {
+  margin: 8px 0 24px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+.mdbook-op > summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+  list-style: none;
+  user-select: none;
+}
+.mdbook-op > summary::-webkit-details-marker { display: none; }
+.mdbook-op > summary::before {
+  content: '▸';
+  display: inline-block;
+  width: 1em;
+  margin-right: 4px;
+  color: var(--vp-c-text-3);
+  transition: transform 0.15s;
+}
+.mdbook-op[open] > summary::before { transform: rotate(90deg); }
+.mdbook-op > summary:hover { color: var(--vp-c-brand-1); }
+.mdbook-op[open] > summary { border-bottom: 1px solid var(--vp-c-divider); }
+/* Inner content gets its own padding; the console keeps its own frame. */
+.mdbook-op > *:not(summary) { margin-inline: 12px; }
+.mdbook-op > *:last-child { margin-bottom: 12px; }
+@media print {
+  .mdbook-op > *:not(summary) { display: block !important; }
+}

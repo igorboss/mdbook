@@ -74,6 +74,7 @@ export function loadConfig(projectRoot, overrides = {}) {
     search: typeof data.search === 'object' && data.search ? (data.search.enabled ?? true) : (data.search ?? true),
     searchExclude:
       (typeof data.search === 'object' && data.search && data.search.exclude) || [],
+    openapi: normalizeOpenapi(data.openapi, projectRoot),
     comments: data.comments || null, // e.g. { provider: giscus, repo, repoId, category, categoryId }
     footer: data.footer || null, // site footer: { message, copyright } (inline HTML allowed)
     locales: data.locales || null, // resolved from content when null
@@ -104,6 +105,76 @@ export function applySpaceConfig(cfg, model) {
   if (ssg.search != null && raw.search == null) cfg.search = ssg.search
   if (ssg.logo && !cfg.site.logo) cfg.site.logo = ssg.logo
   return cfg
+}
+
+// Normalize the `openapi:` block.
+//
+//   openapi:
+//     specs:                       # name -> local file or URL; pages cite the name
+//       petstore: ./api/petstore.yaml
+//       billing:  https://api.example.com/openapi.json
+//     tryIt: true                  # interactive console (default: on)
+//     auth:                        # ONLY what an OpenAPI document cannot declare
+//       clientId: docs-portal      #   the spec's securitySchemes own the endpoints
+//       scopes: [openid, api.read]
+//       pkce: true
+//       redirectUri: /oauth2/callback
+//       issuer: https://id.example.com/realms/x   # fallback when the spec has no
+//                                                 # openIdConnect scheme
+//
+// There is deliberately no `openapi: true` switch — declaring specs enables the
+// feature, so the two can never disagree. `enabled: false` still turns it off.
+function normalizeOpenapi(data, projectRoot) {
+  if (!data || data.enabled === false) return null
+  // A spec is either a bare file/URL, or an object carrying fetch headers for a
+  // document that sits behind auth:
+  //     mpi:
+  //       url: https://api.example.com/api/mpi/api-docs
+  //       headers: { Authorization: "Bearer ${EMR_API_TOKEN}" }
+  // `${VAR}` is resolved from the build environment — a token belongs in CI, not
+  // in a config file, and is never written to the built site.
+  // `openapi.headers` applies to every spec (a whole API behind one token), and
+  // a spec's own `headers` override it per entry.
+  const defaultHeaders = data.headers || null
+  const specs = {}
+  for (const [name, value] of Object.entries(data.specs || {})) {
+    const src = typeof value === 'string' ? value : value?.url
+    if (!src) continue
+    const own = (typeof value === 'object' && value?.headers) || null
+    const headers = defaultHeaders || own ? { ...(defaultHeaders || {}), ...(own || {}) } : null
+    specs[name] = {
+      url: /^https?:\/\//i.test(src) ? String(src) : path.resolve(projectRoot, src),
+      headers,
+      // Overrides whatever the document declares — a generated one often names
+      // the address the service sees itself on rather than a reachable base.
+      server: (typeof value === 'object' && value?.server) || null
+    }
+  }
+  if (!Object.keys(specs).length) return null
+  const auth = data.auth || null
+  return {
+    specs,
+    server: data.server || null, // default base URL for every spec
+    // Dev-server proxy: { '/api': 'https://host' }. The try-it console then
+    // calls the docs' own origin, so the browser never makes a cross-origin
+    // request and the API needs no CORS headers. Applies to `dev` only.
+    proxy: data.proxy || null,
+    tryIt: data.tryIt ?? data['try-it'] ?? true,
+    // Operations render collapsed by default: a document with hundreds of
+    // operations is unreadable fully expanded. The detail stays in the HTML, so
+    // search still finds it.
+    collapsed: data.collapsed ?? true,
+    auth: auth
+      ? {
+          clientId: auth.clientId || auth['client-id'] || null,
+          issuer: (auth.issuer || null)?.replace?.(/\/$/, '') || null,
+          scopes: auth.scopes || ['openid'],
+          pkce: auth.pkce ?? true, // public client: PKCE is the only safe flow
+          redirectUri: auth.redirectUri || auth['redirect-uri'] || '/oauth2/callback',
+          audience: auth.audience || null
+        }
+      : null
+  }
 }
 
 function detectFormat(projectRoot) {

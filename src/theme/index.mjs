@@ -10,6 +10,7 @@ import Footer from './footer.mjs'
 import Breadcrumbs from './breadcrumbs.mjs'
 import Related from './related.mjs'
 import Zoom from './zoom.mjs'
+import OpenApi from './openapi.mjs'
 import './styles/base.css'
 import './styles/smart-text.css'
 
@@ -66,7 +67,7 @@ export default {
       'nav-bar-content-after': () => h(Zoom),
       'doc-before': () => h(Breadcrumbs),
       'doc-after': () => [h(Related), h(Comments)],
-      'layout-bottom': () => [h(Footer), h(Present)]
+      'layout-bottom': () => [h(Footer), h(Present), h(OpenApi)]
     }),
   setup() {
     const route = useRoute()

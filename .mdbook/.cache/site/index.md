@@ -1,3 +1,7 @@
+---
+description: "A Markdown + metadata static-site generator for tutorials, specifications and books. It turns TermX Wiki exports and GitBook repositories into a fast,…"
+---
+
 # mdbook
 
 A Markdown + metadata static-site generator for tutorials, specifications and books.
@@ -82,11 +86,11 @@ TermX Wiki → mdbook feature matrix.
            with: { project: . }
          - uses: actions/configure-pages@v5
          - uses: actions/upload-pages-artifact@v3
-           with: { path: ${{ steps.mdbook.outputs.site }} }
+           with: { path: $&#123;&#123; steps.mdbook.outputs.site &#125;&#125; }
      deploy:
        needs: build
        runs-on: ubuntu-latest
-       environment: { name: github-pages, url: ${{ steps.deployment.outputs.page_url }} }
+       environment: { name: github-pages, url: $&#123;&#123; steps.deployment.outputs.page_url &#125;&#125; }
        steps:
          - id: deployment
            uses: actions/deploy-pages@v4
@@ -276,7 +280,7 @@ language (`name`, `slug`, `lang`):
 ```
 
 TermX page bodies use `breaks: true` (a single newline becomes `<br>`), so keep each
-paragraph on one line. Images are attachments: `![](files/<id>/<file>)` (served from
+paragraph on one line. Images are attachments: `*image*` (served from
 `/attachments/…`). See **[helex-solutions/mdbook § reference projects](#reference-projects)**
 for complete, working `space.json` / `pages.json` examples.
 
@@ -296,7 +300,7 @@ item may carry an image (cover), a heading (title), text (description) and links
 `{.card-grid .cards-row}` for a horizontal (image-left) layout.
 
 ```markdown
-- ![](/.gitbook/assets/base.png)
+- *image*
   ### LT Base
   Core Lithuanian FHIR Implementation Guide.
   [Latest Build](https://build.fhir.org/ig/HL7LT/ig-lt-base){.button}
@@ -372,41 +376,7 @@ Override per block with `collapsed="false"`:
 {% openapi src="petstore" operation="listPets" collapsed="false" %}
 ```
 
-### Base URL
-
-The console sends requests to the document's declared `servers`. A generated document often
-names the address the *service* sees itself on — springdoc emits `http://127.0.0.1:8080` —
-which no reader can reach, so mdbook resolves the base in this order:
-
-1. an explicit `server:` in config (per spec, or one default for all);
-2. any declared server that is not loopback;
-3. **the origin the document was fetched from** — reachable by definition, since the build
-   just used it.
-
-```yaml
-openapi:
-  server: https://api.example.com   # default for every spec
-  specs:
-    billing:
-      url: https://api.example.com/billing/api-docs
-      server: https://staging.example.com   # override for one spec
-```
-
-### Calling an API that sends no CORS headers
-
-An API served from the same origin as its own frontend has no reason to send CORS headers —
-so a docs site on a *different* origin cannot call it from the browser, and the console
-reports `Failed to fetch`. Rather than widening the API's exposure, proxy it through the dev
-server: the browser then only talks to the docs' own origin, and CORS never applies.
-
-```yaml
-openapi:
-  proxy:
-    /api: https://api.example.com
-```
-
-Applies to `mdbook dev` only. Leave the console's **server** field empty to use it — an empty
-field falls back to the page's own origin, which is what the proxy is listening on.
+### Try it, with OpenID Connect
 
 The API document already declares *where* to authenticate — a `securityScheme` of
 `type: openIdConnect` carries a discovery URL, and `type: oauth2` carries the endpoints.
