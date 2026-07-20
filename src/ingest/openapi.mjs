@@ -156,6 +156,11 @@ export async function loadOpenapiSpecs(cfg, log = () => {}) {
     return {}
   }
 
+  // Failures are grouped by cause: one unset token across 34 specs is one
+  // problem, not 34, and 34 identical lines bury everything else in the log.
+  const problems = new Map()
+  const note = (reason, name) => problems.set(reason, [...(problems.get(reason) || []), name])
+
   for (const [name, spec] of Object.entries(cfg.openapi.specs)) {
     const { url: src, headers } = typeof spec === 'string' ? { url: spec, headers: null } : spec
     const cacheFile = path.join(dir, `${name}.json`)
@@ -170,17 +175,28 @@ export async function loadOpenapiSpecs(cfg, log = () => {}) {
     } catch (e) {
       // Unreachable or invalid: fall back to the last good copy if we have one.
       const fallback = [cacheFile, path.join(cacheDir, `${name}.json`)].find((f) => fs.existsSync(f))
+      const reason = e.message.split('\n')[0]
       if (fallback) {
         doc = JSON.parse(fs.readFileSync(fallback, 'utf8'))
-        log(pc.yellow(`openapi: ${name} unreachable (${e.message.split('\n')[0]}) — using cached copy`))
+        note(`${reason} — using cached copy`, name)
       } else {
-        const hint = e.missingEnv ? ' (set it in the build environment)' : ''
-        log(pc.yellow(`openapi: ${name} could not be loaded — ${e.message.split('\n')[0]}${hint}`))
+        note(e.missingEnv ? `${reason} (set it in the build environment)` : reason, name)
         continue
       }
     }
     out[name] = modelFromDocument(name, doc)
-    log(`openapi ${pc.bold(name)} — ${out[name].operations.length} operations`)
+  }
+
+  const names = Object.keys(out)
+  if (names.length) {
+    const ops = names.reduce((n, k) => n + out[k].operations.length, 0)
+    // Few specs: name them. Many: a count, so the log stays readable.
+    const which = names.length <= 4 ? ` (${names.join(', ')})` : ''
+    log(`openapi ${pc.bold(names.length)} spec(s)${which} — ${ops} operations`)
+  }
+  for (const [reason, failed] of problems) {
+    const list = failed.length <= 6 ? failed.join(', ') : `${failed.slice(0, 6).join(', ')} +${failed.length - 6} more`
+    log(pc.yellow(`openapi: ${failed.length} spec(s) not loaded [${list}] — ${reason}`))
   }
   return out
 }
